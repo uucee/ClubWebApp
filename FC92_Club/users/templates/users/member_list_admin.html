@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Member Management - {{ block.super }}{% endblock %}
+
+{% block content %}
+    <h2>Member Management</h2>
+    {# Add button to link to Django Admin User Add page if desired #}
+    {# <a href="{% url 'admin:auth_user_add' %}" class="btn btn-success mb-3">Add New Member</a> #}
+    <hr>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle"> {# align-middle centers content vertically #}
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Full Name</th>
+                    <th>Role</th>
+                    <th>Membership Status</th>
+                    <th>Balance</th>
+                    <th>Login Access</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for profile in members %}
+                <tr>
+                    <td>{{ profile.user.username }}</td>
+                    <td>{{ profile.user.get_full_name|default:"N/A" }}</td>
+                    <td>{{ profile.get_role_display }}</td>
+                    <td>
+                         <span class="badge fs-6 text-bg-{% if profile.status == profile.Status.ACTIVE %}success{% elif profile.status == profile.Status.SUSPENDED %}warning{% elif profile.status == profile.Status.REMOVED %}danger{% else %}secondary{% endif %}">
+                            {{ profile.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="fw-bold {% if profile.balance > 0 %}text-danger{% elif profile.balance < 0 %}text-success{% else %}text-secondary{% endif %}">
+                         £{{ profile.balance|floatformat:2 }}
+                         {% if profile.balance > 0 %}(Owed){% elif profile.balance < 0 %}(Credit){% endif %}
+                    </td>
+                    <td>
+                        {% if profile.user.is_active %}
+                            <span class="badge text-bg-success">Enabled</span>
+                        {% else %}
+                             <span class="badge text-bg-danger">Disabled</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex flex-wrap gap-2"> {# Use flexbox for button layout #}
+                            {# Link to Financial Status (using the new view) #}
+                            <a href="{% url 'member_financial_status' profile_id=profile.pk %}" class="btn btn-info btn-sm" title="View Financial Status">
+                                <i class="fas fa-dollar-sign"></i> Finances
+                            </a>
+
+                            {# Toggle Login Access Button/Form #}
+                            <form method="post" action="{% url 'toggle_member_access' user_id=profile.user.id %}" class="d-inline" onsubmit="return confirm('Are you sure you want to {% if profile.user.is_active %}disable{% else %}enable{% endif %} login access for {{ profile.user.username }}?');">
+                                 {% csrf_token %}
+                                 {% if profile.user.is_active %}
+                                     <button type="submit" class="btn btn-warning btn-sm" title="Disable user login">
+                                         <i class="fas fa-user-lock"></i> Disable Access
+                                     </button>
+                                 {% else %}
+                                     <button type="submit" class="btn btn-success btn-sm" title="Enable user login">
+                                          <i class="fas fa-user-check"></i> Enable Access
+                                     </button>
+                                 {% endif %}
+                            </form>
+
+                            {# Optional: Direct link to edit user in Django Admin #}
+                             <a href="{% url 'admin:auth_user_change' profile.user.id %}" target="_blank" class="btn btn-secondary btn-sm" title="Edit in Admin">
+                                <i class="fas fa-edit"></i> Admin Edit
+                             </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">No members found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# Optional: Font Awesome link if using icons and not included in base.html #}
+    {# <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-..."> #}
+{% endblock %}

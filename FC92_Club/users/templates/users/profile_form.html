@@ -1,0 +1,33 @@
+<!-- users/templates/users/profile_form.html -->
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Edit Profile - {{ block.super }}{% endblock %}
+
+{% block content %}
+    <h2>Edit Profile</h2>
+    <hr>
+    <div class="row">
+        <div class="col-md-8">
+            <form method="post">
+                {% csrf_token %}
+                 <fieldset class="mb-3">
+                    <legend>Contact Information</legend>
+                     <!-- If you want to allow editing name -->
+                     <!-- <div class="mb-3">
+                        <label for="id_first_name" class="form-label">First Name</label>
+                        <input type="text" name="first_name" value="{{ user.first_name }}" class="form-control" id="id_first_name">
+                    </div>
+                     <div class="mb-3">
+                        <label for="id_last_name" class="form-label">Last Name</label>
+                        <input type="text" name="last_name" value="{{ user.last_name }}" class="form-control" id="id_last_name">
+                    </div> -->
+                    {{ form|crispy }}
+                </fieldset>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a href="{% url 'profile_view' %}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

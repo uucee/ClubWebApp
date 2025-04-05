@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %} {# May not be needed if status form is simple HTML #}
+
+{% block title %}Member Details: {{ member_profile.user.username }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+    <h2>
+        Member Details: {{ member_profile.user.get_full_name|default:member_profile.user.username }}
+        <small class="text-muted">({{ member_profile.user.username }})</small>
+    </h2>
+     <a href="{% url 'member_list_admin' %}" class="btn btn-outline-secondary btn-sm mb-3">
+        <i class="fas fa-arrow-left me-1"></i> Back to Member List
+     </a>
+    <hr>
+
+    <div class="row">
+        <!-- Profile & Status -->
+        <div class="col-lg-5">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                   <span>Profile & Status</span>
+                    <a href="{% url 'admin:auth_user_change' member_profile.user.id %}" target="_blank" class="btn btn-outline-secondary btn-sm" title="Edit in Admin">
+                        <i class="fas fa-edit"></i> Edit User
+                    </a>
+                </div>
+                <div class="card-body">
+                    <p><strong>Username:</strong> {{ member_profile.user.username }}</p>
+                    <p><strong>Email:</strong> {{ member_profile.user.email }}</p>
+                    <p><strong>Name:</strong> {{ member_profile.user.get_full_name|default:"Not Set" }}</p>
+                    <p><strong>Role:</strong> {{ member_profile.get_role_display }}</p>
+                    <p><strong>Phone:</strong> {{ member_profile.phone_number|default:"Not Set" }}</p>
+                    <p><strong>Address:</strong> {{ member_profile.address|linebreaksbr|default:"Not Set" }}</p>
+                    <p><strong>Joined:</strong> {{ member_profile.join_date|date:"F d, Y" }}</p>
+
+                    <hr>
+                    <h5 class="card-title">Membership Status</h5>
+                    <p>Current Status:
+                         <span class="badge fs-6 text-bg-{% if member_profile.status == member_profile.Status.ACTIVE %}success{% elif member_profile.status == member_profile.Status.SUSPENDED %}warning{% elif member_profile.status == member_profile.Status.REMOVED %}danger{% else %}secondary{% endif %}">
+                            {{ member_profile.get_status_display }}
+                        </span>
+                    </p>
+
+                    <form method="post" action="{% url 'update_member_status' profile_id=member_profile.id %}" class="mt-3">
+                        {% csrf_token %}
+                        <div class="input-group">
+                             <label class="input-group-text" for="statusSelect">Change Status:</label>
+                             <select class="form-select" id="statusSelect" name="status">
+                                {% for value, display in member_profile.Status.choices %}
+                                    <option value="{{ value }}" {% if member_profile.status == value %}selected{% endif %}>{{ display }}</option>
+                                {% endfor %}
+                             </select>
+                             <button type="submit" class="btn btn-primary">Update Status</button>
+                        </div>
+                    </form>
+
+                     <hr>
+                     <h5 class="card-title">Login Access</h5>
+                      <p>Current Access:
+                        {% if member_profile.user.is_active %}
+                            <span class="badge text-bg-success">Enabled</span>
+                        {% else %}
+                             <span class="badge text-bg-danger">Disabled</span>
+                        {% endif %}
+                      </p>
+                      <form method="post" action="{% url 'toggle_member_access' user_id=member_profile.user.id %}" class="d-inline" onsubmit="return confirm('Are you sure you want to {% if member_profile.user.is_active %}disable{% else %}enable{% endif %} login access for {{ member_profile.user.username }}?');">
+                         {% csrf_token %}
+                         {% if member_profile.user.is_active %}
+                             <button type="submit" class="btn btn-warning btn-sm" title="Disable user login">
+                                 <i class="fas fa-user-lock"></i> Disable Login Access
+                             </button>
+                         {% else %}
+                             <button type="submit" class="btn btn-success btn-sm" title="Enable user login">
+                                  <i class="fas fa-user-check"></i> Enable Login Access
+                             </button>
+                         {% endif %}
+                      </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Summary & History -->
+        <div class="col-lg-7">
+            <div class="card mb-4">
+                 <div class="card-header">Financial Summary</div>
+                 <div class="card-body">
+                     <p><strong>Total Amount Due:</strong> £{{ total_due|floatformat:2 }}</p>
+                     <p><strong>Total Amount Paid:</strong> £{{ total_paid|floatformat:2 }}</p>
+                     <h5 class="mt-2">
+                         <strong>Current Balance:</strong>
+                         <span class="{% if balance >= 0 %}text-success{% else %}text-danger{% endif %}">
+                             £{{ balance|floatformat:2 }}
+                         </span>
+                         {% if balance < 0 %} (Amount Owing){% elif balance > 0 %} (In Credit){% else %} (Settled){% endif %}
+                     </h5>
+                     {% if member_profile.status == member_profile.Status.SUSPENDED %}
+                        <p class="alert alert-warning mt-3 small">Membership status is currently 'Suspended'.</p>
+                     {% endif %}
+                 </div>
+            </div>
+
+             <div class="card mb-4">
+                 <div class="card-header">Payment History</div>
+                 <div class="table-responsive">
+                     <table class="table table-sm table-striped mb-0">
+                        <thead>
+                            <tr><th>Date</th><th>Amount Paid</th><th>Notes</th><th>Recorded By</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payments %}
+                                <tr>
+                                    <td>{{ payment.payment_date|date:"Y-m-d" }}</td>
+                                    <td>£{{ payment.amount_paid|floatformat:2 }}</td>
+                                    <td>{{ payment.notes|default:"" }}</td>
+                                    <td>{{ payment.recorded_by.username|default:"N/A" }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="4" class="text-center">No payments recorded.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                     </table>
+                 </div>
+             </div>
+
+             <div class="card mb-4">
+                 <div class="card-header">Dues History</div>
+                 <div class="table-responsive">
+                    <table class="table table-sm table-striped mb-0">
+                        <thead>
+                            <tr><th>Due Date</th><th>Description</th><th>Amount Due</th></tr>
+                        </thead>
+                        <tbody>
+                             {% for due in dues %}
+                                <tr>
+                                    <td>{{ due.due_date|date:"Y-m-d" }}</td>
+                                    <td>{{ due.description }}</td>
+                                    <td>£{{ due.amount_due|floatformat:2 }}</td>
+                                </tr>
+                             {% empty %}
+                                <tr><td colspan="3" class="text-center">No dues recorded.</td></tr>
+                             {% endfor %}
+                         </tbody>
+                    </table>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+    {# Optional: Font Awesome link if using icons and not included in base.html #}
+    {# <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-..."> #}
+
+{% endblock %}

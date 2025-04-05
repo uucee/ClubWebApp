@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %} {# Assuming you might add forms later, or just for consistency #}
+{% load humanize %} {# For better number formatting if needed, e.g., intcomma #}
+
+{% block title %}Financial Status - {{ target_profile.user.username }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<h2>Financial Status for {{ target_profile.user.get_full_name|default:target_profile.user.username }}</h2>
+<hr>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-header">Total Dues Assigned</div>
+            <div class="card-body">
+                <h4 class="card-title">£{{ dues_total|floatformat:2|default:"0.00" }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-header">Total Payments Received</div>
+            <div class="card-body">
+                <h4 class="card-title">£{{ payments_total|floatformat:2|default:"0.00" }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center {% if balance > 0 %}border-danger{% elif balance < 0 %}border-success{% else %}border-secondary{% endif %}">
+            <div class="card-header {% if balance > 0 %}text-danger{% elif balance < 0 %}text-success{% else %}text-secondary{% endif %}">
+                Current Balance
+            </div>
+            <div class="card-body {% if balance > 0 %}text-danger{% elif balance < 0 %}text-success{% else %}text-secondary{% endif %}">
+                <h4 class="card-title">£{{ balance|floatformat:2|default:"0.00" }}</h4>
+                {% if balance > 0 %}
+                    <p class="card-text">(Amount Owed)</p>
+                {% elif balance < 0 %}
+                    <p class="card-text">(Credit Balance)</p>
+                {% else %}
+                    <p class="card-text">(Settled)</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="row mt-5">
+    <div class="col-md-6">
+        <h3>Dues Assigned</h3>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover table-sm">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Due Date</th>
+                        <th>Assigned On</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for due in dues %}
+                    <tr>
+                        <td>{{ due.description }}</td>
+                        <td>£{{ due.amount_due|floatformat:2 }}</td>
+                        <td>{{ due.due_date|date:"Y-m-d" }}</td>
+                        <td>{{ due.created_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">No dues assigned.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <h3>Payments Received</h3>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover table-sm">
+                <thead>
+                    <tr>
+                        <th>Amount Paid</th>
+                        <th>Payment Date</th>
+                        <th>Recorded On</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                    <tr>
+                        <td>£{{ payment.amount_paid|floatformat:2 }}</td>
+                        <td>{{ payment.payment_date|date:"Y-m-d" }}</td>
+                        <td>{{ payment.recorded_at|date:"Y-m-d H:i" }}</td>
+                        <td>{{ payment.notes|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">No payments recorded.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if request.user.profile.is_financial_secretary or request.user.profile.is_admin %}
+<div class="mt-4">
+    <a href="{% url 'member_list_admin' %}" class="btn btn-secondary">Back to Member List</a>
+    {# Or link back to wherever FS/Admin came from #}
+</div>
+{% else %}
+<div class="mt-4">
+     <a href="{% url 'profile_view' %}" class="btn btn-secondary">Back to My Profile</a>
+</div>
+{% endif %}
+
+
+{% endblock %}

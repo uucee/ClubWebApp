@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Complete Your Profile{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Complete Your Profile</h3>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Welcome to FC92 Club! Please complete your profile information and set up your login credentials below.</p>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_username">Username</label>
+                                    <input type="text" class="form-control" id="id_username" name="username" required>
+                                    <small class="form-text text-muted">Choose a unique username for logging in.</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_first_name">First Name</label>
+                                    <input type="text" class="form-control" id="id_first_name" name="first_name" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_password">Password</label>
+                                    <input type="password" class="form-control" id="id_password" name="password" required>
+                                    <small class="form-text text-muted">Password must be at least 8 characters long.</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_password_confirm">Confirm Password</label>
+                                    <input type="password" class="form-control" id="id_password_confirm" name="password_confirm" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_last_name">Last Name</label>
+                                    <input type="text" class="form-control" id="id_last_name" name="last_name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_phone">Phone Number</label>
+                                    <input type="text" class="form-control" id="id_phone" name="phone" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="id_address">Address</label>
+                            <textarea class="form-control" id="id_address" name="address" rows="3" required></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Complete Profile</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

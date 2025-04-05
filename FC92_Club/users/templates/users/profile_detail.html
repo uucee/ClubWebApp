@@ -1,0 +1,80 @@
+<!-- users/templates/users/profile_detail.html -->
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}My Profile - {{ block.super }}{% endblock %}
+
+{% block content %}
+    <h2>My Profile & Financial Status</h2>
+    <hr>
+
+    <div class="row">
+        <!-- Profile Details -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    Profile Details
+                    <a href="{% url 'profile_edit' %}" class="btn btn-sm btn-outline-secondary float-end">Edit Profile</a>
+                </div>
+                <div class="card-body">
+                    <p><strong>Username:</strong> {{ user.username }}</p>
+                    <p><strong>Email:</strong> {{ user.email }}</p>
+                    <p><strong>Name:</strong> {{ user.get_full_name|default:"Not Set" }}</p>
+                    <p><strong>Role:</strong> {{ profile.get_role_display }}</p>
+                    <p><strong>Membership Status:</strong> <span class="badge bg-{% if profile.status == 'ACT' %}success{% elif profile.status == 'SUS' %}warning{% else %}danger{% endif %}">{{ profile.get_status_display }}</span></p>
+                    <p><strong>Phone:</strong> {{ profile.phone_number|default:"Not Set" }}</p>
+                    <p><strong>Address:</strong> {{ profile.address|linebreaksbr|default:"Not Set" }}</p>
+                    <p><strong>Joined:</strong> {{ profile.join_date|date:"F d, Y" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Summary -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                 <div class="card-header">Financial Summary</div>
+                 <div class="card-body">
+                     <p><strong>Total Amount Due:</strong> £{{ total_due|floatformat:2 }}</p>
+                     <p><strong>Total Amount Paid:</strong> £{{ total_paid|floatformat:2 }}</p>
+                     <h5 class="mt-2">
+                         <strong>Current Balance:</strong>
+                         <span class="{% if balance >= 0 %}text-success{% else %}text-danger{% endif %}">
+                             £{{ balance|floatformat:2 }}
+                         </span>
+                         {% if balance < 0 %} (Amount Owing){% elif balance > 0 %} (In Credit){% else %} (Settled){% endif %}
+                     </h5>
+                     {% if profile.status == 'SUS' %}
+                        <p class="alert alert-warning mt-3">Your membership is currently suspended due to outstanding payments.</p>
+                     {% endif %}
+                 </div>
+            </div>
+
+             <div class="card mb-4">
+                 <div class="card-header">Payment History</div>
+                 <ul class="list-group list-group-flush">
+                     {% for payment in payments %}
+                         <li class="list-group-item">
+                             {{ payment.payment_date|date:"Y-m-d" }}: £{{ payment.amount_paid|floatformat:2 }}
+                             {% if payment.notes %}<small class="text-muted d-block"> ({{ payment.notes }})</small>{% endif %}
+                         </li>
+                     {% empty %}
+                         <li class="list-group-item">No payments recorded.</li>
+                     {% endfor %}
+                 </ul>
+             </div>
+
+             <div class="card mb-4">
+                 <div class="card-header">Dues History</div>
+                  <ul class="list-group list-group-flush">
+                     {% for due in dues %}
+                         <li class="list-group-item">
+                            {{ due.due_date|date:"Y-m-d" }}: £{{ due.amount_due|floatformat:2 }} - {{ due.description }}
+                         </li>
+                     {% empty %}
+                         <li class="list-group-item">No dues recorded.</li>
+                     {% endfor %}
+                 </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}

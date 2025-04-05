@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Member Management{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Member Management</h2>
+    
+    <!-- Add Single Member Form -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Add Single Member</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'add_single_member' %}">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="first_name">First Name</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="last_name">Last Name</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="role">Role</label>
+                    <select class="form-control" id="role" name="role">
+                        <option value="MEMBER">Member</option>
+                        <option value="FINANCIAL_SECRETARY">Financial Secretary</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="send_invite" name="send_invite" checked>
+                        <label class="form-check-label" for="send_invite">Send invitation email</label>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Member</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk Upload Form -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Bulk Upload Members</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'bulk_upload_members' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="csv_file">Upload CSV File</label>
+                    <input type="file" class="form-control-file" id="csv_file" name="csv_file" accept=".csv" required>
+                    <small class="form-text text-muted">
+                        CSV format: first_name,last_name,email,role<br>
+                        Role options: MEMBER, FINANCIAL_SECRETARY
+                    </small>
+                </div>
+                <div class="form-group">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="bulk_send_invite" name="send_invite" checked>
+                        <label class="form-check-label" for="bulk_send_invite">Send invitation emails</label>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Upload and Process</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk Invite Form -->
+    <div class="card">
+        <div class="card-header">
+            <h4>Send Bulk Invitations</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'send_bulk_invites' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="invite_emails">Email Addresses (one per line)</label>
+                    <textarea class="form-control" id="invite_emails" name="emails" rows="5" required></textarea>
+                    <small class="form-text text-muted">Enter one email address per line</small>
+                </div>
+                <button type="submit" class="btn btn-primary">Send Invitations</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

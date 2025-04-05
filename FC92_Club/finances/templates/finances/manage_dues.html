@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Manage Dues - {{ block.super }}{% endblock %}
+
+{% block content %}
+    <h2>Manage Member Dues</h2>
+    <hr>
+
+    <div class="row g-4"> {# g-4 adds gutters (spacing) between columns/rows #}
+        <!-- Add Individual Due Form -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    Add Due for Individual Member
+                </div>
+                <div class="card-body">
+                     <form method="post" novalidate id="individual-due-form">
+                         {% csrf_token %}
+                         {{ individual_form|crispy }}
+                         <button type="submit" name="submit_individual" value="submit_individual" class="btn btn-primary mt-3" id="submit-individual">Add Individual Due</button>
+                     </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Bulk Due Form -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    Add Bulk Due (for all Active Members)
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate id="bulk-due-form">
+                         {% csrf_token %}
+                         {{ bulk_form|crispy }}
+                         <button type="submit" name="submit_bulk" value="submit_bulk" class="btn btn-warning mt-3" id="submit-bulk">Add Bulk Due to Active Members</button>
+                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Dues List -->
+    <div class="mt-5">
+        <h3>Recently Added Dues</h3>
+         <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Due Date</th>
+                        <th>Added On</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for due in recent_dues %}
+                    <tr>
+                        <td>{{ due.member.user.username }}</td>
+                        <td>{{ due.description }}</td>
+                        <td>£{{ due.amount_due|floatformat:2 }}</td>
+                        <td>{{ due.due_date|date:"Y-m-d" }}</td>
+                        <td>{{ due.created_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">No recent dues found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Helper function to handle form submission
+        function handleFormSubmit(buttonId, formId) {
+            const submitBtn = document.getElementById(buttonId);
+            if (!submitBtn) return;
+
+            submitBtn.addEventListener('click', function(e) {
+                console.log(`${buttonId} clicked`);
+                e.preventDefault(); // Prevent default form submission
+                
+                const form = document.getElementById(formId);
+                if (!form) return;
+
+                // Validate form
+                if (form.checkValidity()) {
+                    console.log('Form is valid, submitting...');
+                    
+                    // Log form data (for debugging)
+                    const formData = new FormData(form);
+                    for (let [key, value] of formData.entries()) {
+                        console.log(`${key}: ${value}`);
+                    }
+
+                    // Add hidden input for the submit button's name and value
+                    let hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = this.name; // Use button's name
+                    hiddenInput.value = this.value; // Use button's value
+                    form.appendChild(hiddenInput);
+                    
+                    // Disable button and show loading state
+                    this.disabled = true;
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+                    
+                    // Submit the form
+                    form.submit();
+                } else {
+                    console.log('Form validation failed');
+                    form.reportValidity(); // Show browser validation messages
+                }
+            });
+        }
+
+        // Attach handlers
+        handleFormSubmit('submit-individual', 'individual-due-form');
+        handleFormSubmit('submit-bulk', 'bulk-due-form');
+    });
+</script>
+{% endblock %}

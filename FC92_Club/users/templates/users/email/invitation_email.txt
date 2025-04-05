@@ -1,0 +1,11 @@
+Dear Future Member,
+
+You have been invited to join FC92 Club!
+
+Click the link below to create your account and complete your profile:
+{{ invitation_link }}
+
+This invitation link will expire in 7 days.
+
+Best regards,
+FC92 Club Team 

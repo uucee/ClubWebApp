@@ -1,0 +1,37 @@
+<!-- pages/templates/pages/home.html -->
+{% extends 'base.html' %}
+
+{% block title %}Welcome - {{ block.super }}{% endblock %}
+
+{% block content %}
+    <div class="jumbotron bg-light p-5 rounded mb-4">
+      <h1 class="display-4">Welcome to the Club!</h1>
+      <p class="lead">Stay updated with the latest news and manage your membership.</p>
+      <hr class="my-4">
+      <p>Check out the latest announcements below.</p>
+       {% if not user.is_authenticated %}
+      <a class="btn btn-primary btn-lg" href="{% url 'login' %}" role="button">Member Login</a>
+      {% endif %}
+    </div>
+
+    <h2>Latest Announcements</h2>
+     <hr>
+
+    {% if announcements %}
+        {% for announcement in announcements %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ announcement.title }}</h5>
+                     <p class="card-subtitle mb-2 text-muted">
+                        Posted on {{ announcement.publish_date|date:"F d, Y" }}
+                        {% if announcement.author %} by {{ announcement.author.username }}{% endif %}
+                    </p>
+                    <p class="card-text">{{ announcement.content|linebreaksbr }}</p> {# Use linebreaksbr for simple text formatting #}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No announcements available at the moment.</p>
+    {% endif %}
+
+{% endblock %}
