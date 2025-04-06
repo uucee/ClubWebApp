@@ -87,11 +87,11 @@ WSGI_APPLICATION = 'FC92_Club.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'fc92_club_db',
-        'USER': 'club_admin',
-        'PASSWORD': 'secure_password',
-        'HOST': 'localhost',
-        'PORT': 5433,
+        'NAME': os.environ.get('POSTGRES_DB', 'fc92_club'),
+        'USER': os.environ.get('POSTGRES_USER', 'postgres'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'postgres'),
+        'HOST': os.environ.get('POSTGRES_HOST', 'db'),
+        'PORT': os.environ.get('POSTGRES_PORT', '5432'),  # Changed to internal Docker port
     }
 }
 
@@ -131,7 +131,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 # Default primary key field type
@@ -147,9 +147,9 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 # Login/Logout Redirects
-LOGIN_REDIRECT_URL = 'home' # Redirect to home after login
-LOGOUT_REDIRECT_URL = 'home' # Redirect to home after logout
-LOGIN_URL = 'login' # URL name for the login page
+LOGIN_REDIRECT_URL = 'home'  # Redirect to home after login
+LOGIN_URL = 'login'  # URL to redirect to for login
+LOGOUT_REDIRECT_URL = 'home'  # Redirect to home after logout
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
