@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Financial Report{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">Financial Report</h2>
+                    <div class="btn-group">
+                        {% if is_financial_secretary %}
+                        <a href="{% url 'finances:record_payment' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Record Payment
+                        </a>
+                        <a href="{% url 'finances:manage_dues' %}" class="btn btn-secondary">
+                            <i class="fas fa-cog"></i> Manage Dues
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'users:financial_report' %}?download=1{% if filter_status %}&status={{ filter_status }}{% endif %}" class="btn btn-success">
+                            <i class="fas fa-download"></i> Download Report
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Filter Section -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <form method="get" class="form-inline">
+                                <div class="form-group me-2">
+                                    <label for="status" class="me-2">Filter by Status:</label>
+                                    <select name="status" id="status" class="form-select" onchange="this.form.submit()">
+                                        <option value="">All Members</option>
+                                        <option value="up_to_date" {% if filter_status == 'up_to_date' %}selected{% endif %}>Financially Up to Date</option>
+                                        <option value="overdue" {% if filter_status == 'overdue' %}selected{% endif %}>Overdue</option>
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Summary Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">Total Dues</h5>
+                                    <p class="card-text h4">₦{{ total_dues|floatformat:2|intcomma }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">Total Payments</h5>
+                                    <p class="card-text h4">₦{{ total_payments|floatformat:2|intcomma }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">Total Balance</h5>
+                                    <p class="card-text h4 {% if total_balance > 0 %}text-danger{% elif total_balance < 0 %}text-success{% endif %}">
+                                        ₦{{ total_balance|floatformat:2|intcomma }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">Up to Date Members</h5>
+                                    <p class="card-text h4">{{ up_to_date_count }}/{{ total_members }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Member Financial Details -->
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Member</th>
+                                    <th>Total Dues</th>
+                                    <th>Total Payments</th>
+                                    <th>Balance</th>
+                                    <th>Status</th>
+                                    <th>Financial Status</th>
+                                    {% if is_financial_secretary %}
+                                    <th>Actions</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for profile in profiles %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'users:profile' profile.user.username %}">
+                                            {{ profile.user.get_full_name }}
+                                        </a>
+                                    </td>
+                                    <td>₦{{ profile.total_dues|floatformat:2|intcomma }}</td>
+                                    <td>₦{{ profile.total_payments|floatformat:2|intcomma }}</td>
+                                    <td>
+                                        <span class="{% if profile.balance > 0 %}text-danger{% elif profile.balance < 0 %}text-success{% endif %}">
+                                            ₦{{ profile.balance|floatformat:2|intcomma }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if profile.status == 'active' %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ profile.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if profile.balance <= 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                            {% if profile.balance <= 0 %}Up to Date{% else %}Overdue{% endif %}
+                                        </span>
+                                    </td>
+                                    {% if is_financial_secretary %}
+                                    <td>
+                                        <a href="{% url 'finances:record_payment' %}?member={{ profile.user.id }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-plus"></i> Add Payment
+                                        </a>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="{% if is_financial_secretary %}7{% else %}6{% endif %}" class="text-center">
+                                        No members found.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

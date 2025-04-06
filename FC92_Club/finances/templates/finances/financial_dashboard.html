@@ -13,7 +13,7 @@
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title"><i class="fas fa-dollar-sign me-2"></i>Record Payment</h5>
                     <p class="card-text flex-grow-1">Enter a new payment received from a member.</p>
-                    <a href="{% url 'record_payment' %}" class="btn btn-primary mt-auto">Go to Record Payment</a>
+                    <a href="{% url 'finances:record_payment' %}" class="btn btn-primary mt-auto">Go to Record Payment</a>
                 </div>
             </div>
         </div>
@@ -23,7 +23,7 @@
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title"><i class="fas fa-file-invoice-dollar me-2"></i>Manage Dues</h5>
                     <p class="card-text flex-grow-1">Add individual or bulk dues (e.g., annual fees) for members.</p>
-                    <a href="{% url 'manage_dues' %}" class="btn btn-primary mt-auto">Go to Manage Dues</a>
+                    <a href="{% url 'finances:manage_dues' %}" class="btn btn-primary mt-auto">Go to Manage Dues</a>
                 </div>
             </div>
         </div>
@@ -33,7 +33,7 @@
                  <div class="card-body d-flex flex-column">
                     <h5 class="card-title"><i class="fas fa-users me-2"></i>View Member List</h5>
                     <p class="card-text flex-grow-1">See all members, their status, and access financial details.</p>
-                    <a href="{% url 'member_list_admin' %}" class="btn btn-secondary mt-auto">Go to Member List</a>
+                    <a href="{% url 'users:member_list_admin' %}" class="btn btn-secondary mt-auto">Go to Member List</a>
                 </div>
             </div>
         </div>

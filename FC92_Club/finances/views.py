@@ -31,17 +31,19 @@ def record_payment(request):
     if request.method == 'POST':
         form = PaymentForm(request.POST)
         if form.is_valid():
-            payment = form.save(commit=False)
-            payment.recorded_by = request.user
-            payment.save()
-            messages.success(request, f"Payment of {payment.amount_paid} recorded for {payment.member.user.username}.")
-            # Redirect to member detail or back to form?
-            return redirect('record_payment') # Redirect back to clear form
+            try:
+                payment = form.save(commit=False)
+                payment.recorded_by = request.user
+                payment.save()
+                messages.success(request, f"Payment of ₦{payment.amount_paid} recorded for {payment.member.user.get_full_name()}.")
+                return redirect('finances:record_payment')  # Redirect back to clear form
+            except Exception as e:
+                messages.error(request, f"Error recording payment: {str(e)}")
         else:
-             messages.error(request, 'Please correct the errors below.')
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = PaymentForm()
-        # Pre-fill date?
+        # Pre-fill date
         form.fields['payment_date'].initial = timezone.now().date()
 
     context = {'form': form}
@@ -69,7 +71,7 @@ def manage_dues(request):
                     due.save()
                     print(f"Due saved: {due}")  # Debug log
                     messages.success(request, f"Due '{due.description}' added for {due.member.user.username}.")
-                    return redirect('manage_dues')
+                    return redirect('finances:manage_dues')
                 except Exception as e:
                     print(f"Error saving individual due: {str(e)}")  # Debug log
                     messages.error(request, f"Error saving individual due: {str(e)}")
@@ -99,7 +101,7 @@ def manage_dues(request):
                         print(f"Creating {len(dues_to_create)} bulk dues")  # Debug log
                         Due.objects.bulk_create(dues_to_create)
                         messages.success(request, f"Bulk due '{description}' added for {len(dues_to_create)} active members.")
-                        return redirect('manage_dues')
+                        return redirect('finances:manage_dues')
                     except Exception as e:
                         print(f"Error saving bulk dues: {str(e)}")  # Debug log
                         messages.error(request, f"Error saving bulk dues: {str(e)}")
@@ -137,7 +139,7 @@ def member_financial_status(request, profile_id=None):
 
     if not target_profile_pk:
         messages.error(request, "Could not determine the member profile.")
-        return redirect('home')
+        return redirect('pages:home')
 
     # Fetch the specific profile with annotated financial totals
     try:
@@ -160,7 +162,7 @@ def member_financial_status(request, profile_id=None):
             .get(pk=target_profile_pk)
     except Profile.DoesNotExist:
         messages.error(request, "Member profile not found.")
-        return redirect('member_list_admin' if can_view_others else 'home')
+        return redirect('users:member_list_admin' if can_view_others else 'pages:home')
 
     # Fetch detailed dues and payments separately for display
     dues = Due.objects.filter(member=profile_with_totals).order_by('-due_date', '-created_at')

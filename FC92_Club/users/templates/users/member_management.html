@@ -13,7 +13,7 @@
             <h4>Add Single Member</h4>
         </div>
         <div class="card-body">
-            <form method="post" action="{% url 'add_single_member' %}">
+            <form method="post" action="{% url 'users:add_single_member' %}">
                 {% csrf_token %}
                 <div class="row">
                     <div class="col-md-6">
@@ -33,6 +33,7 @@
                     <label for="email">Email</label>
                     <input type="email" class="form-control" id="email" name="email" required>
                 </div>
+                {% if request.user.profile.is_admin %}
                 <div class="form-group">
                     <label for="role">Role</label>
                     <select class="form-control" id="role" name="role">
@@ -40,6 +41,9 @@
                         <option value="FINANCIAL_SECRETARY">Financial Secretary</option>
                     </select>
                 </div>
+                {% else %}
+                <input type="hidden" name="role" value="MEMBER">
+                {% endif %}
                 <div class="form-group">
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input" id="send_invite" name="send_invite" checked>
@@ -57,14 +61,18 @@
             <h4>Bulk Upload Members</h4>
         </div>
         <div class="card-body">
-            <form method="post" action="{% url 'bulk_upload_members' %}" enctype="multipart/form-data">
+            <form method="post" action="{% url 'users:bulk_upload_members' %}" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="form-group">
                     <label for="csv_file">Upload CSV File</label>
                     <input type="file" class="form-control-file" id="csv_file" name="csv_file" accept=".csv" required>
                     <small class="form-text text-muted">
-                        CSV format: first_name,last_name,email,role<br>
+                        CSV format: first_name,last_name,email{% if request.user.profile.is_admin %},role{% endif %}<br>
+                        {% if request.user.profile.is_admin %}
                         Role options: MEMBER, FINANCIAL_SECRETARY
+                        {% else %}
+                        All members will be added as regular members
+                        {% endif %}
                     </small>
                 </div>
                 <div class="form-group">
@@ -84,7 +92,7 @@
             <h4>Send Bulk Invitations</h4>
         </div>
         <div class="card-body">
-            <form method="post" action="{% url 'send_bulk_invites' %}">
+            <form method="post" action="{% url 'users:send_bulk_invites' %}">
                 {% csrf_token %}
                 <div class="form-group">
                     <label for="invite_emails">Email Addresses (one per line)</label>

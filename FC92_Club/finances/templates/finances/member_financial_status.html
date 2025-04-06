@@ -14,7 +14,7 @@
         <div class="card text-center">
             <div class="card-header">Total Dues Assigned</div>
             <div class="card-body">
-                <h4 class="card-title">£{{ dues_total|floatformat:2|default:"0.00" }}</h4>
+                <h4 class="card-title">₦{{ dues_total|floatformat:2|default:"0.00" }}</h4>
             </div>
         </div>
     </div>
@@ -22,7 +22,7 @@
         <div class="card text-center">
             <div class="card-header">Total Payments Received</div>
             <div class="card-body">
-                <h4 class="card-title">£{{ payments_total|floatformat:2|default:"0.00" }}</h4>
+                <h4 class="card-title">₦{{ payments_total|floatformat:2|default:"0.00" }}</h4>
             </div>
         </div>
     </div>
@@ -32,7 +32,7 @@
                 Current Balance
             </div>
             <div class="card-body {% if balance > 0 %}text-danger{% elif balance < 0 %}text-success{% else %}text-secondary{% endif %}">
-                <h4 class="card-title">£{{ balance|floatformat:2|default:"0.00" }}</h4>
+                <h4 class="card-title">₦{{ balance|floatformat:2|default:"0.00" }}</h4>
                 {% if balance > 0 %}
                     <p class="card-text">(Amount Owed)</p>
                 {% elif balance < 0 %}
@@ -63,7 +63,7 @@
                     {% for due in dues %}
                     <tr>
                         <td>{{ due.description }}</td>
-                        <td>£{{ due.amount_due|floatformat:2 }}</td>
+                        <td>₦{{ due.amount_due|floatformat:2 }}</td>
                         <td>{{ due.due_date|date:"Y-m-d" }}</td>
                         <td>{{ due.created_at|date:"Y-m-d H:i" }}</td>
                     </tr>
@@ -92,7 +92,7 @@
                 <tbody>
                     {% for payment in payments %}
                     <tr>
-                        <td>£{{ payment.amount_paid|floatformat:2 }}</td>
+                        <td>₦{{ payment.amount_paid|floatformat:2 }}</td>
                         <td>{{ payment.payment_date|date:"Y-m-d" }}</td>
                         <td>{{ payment.recorded_at|date:"Y-m-d H:i" }}</td>
                         <td>{{ payment.notes|default:"-" }}</td>
@@ -110,12 +110,12 @@
 
 {% if request.user.profile.is_financial_secretary or request.user.profile.is_admin %}
 <div class="mt-4">
-    <a href="{% url 'member_list_admin' %}" class="btn btn-secondary">Back to Member List</a>
+    <a href="{% url 'users:member_list_admin' %}" class="btn btn-secondary">Back to Member List</a>
     {# Or link back to wherever FS/Admin came from #}
 </div>
 {% else %}
 <div class="mt-4">
-     <a href="{% url 'profile_view' %}" class="btn btn-secondary">Back to My Profile</a>
+     <a href="{% url 'users:profile_view' %}" class="btn btn-secondary">Back to My Profile</a>
 </div>
 {% endif %}
 

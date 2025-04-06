@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %} {# May not be needed if status form is simple HTML #}
+{% load static %}
+{% load humanize %}
 
 {% block title %}Member Details: {{ member_profile.user.username }} - {{ block.super }}{% endblock %}
 
@@ -8,7 +10,7 @@
         Member Details: {{ member_profile.user.get_full_name|default:member_profile.user.username }}
         <small class="text-muted">({{ member_profile.user.username }})</small>
     </h2>
-     <a href="{% url 'member_list_admin' %}" class="btn btn-outline-secondary btn-sm mb-3">
+     <a href="{% url 'users:member_list_admin' %}" class="btn btn-outline-secondary btn-sm mb-3">
         <i class="fas fa-arrow-left me-1"></i> Back to Member List
      </a>
     <hr>
@@ -19,7 +21,7 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                    <span>Profile & Status</span>
-                    <a href="{% url 'admin:auth_user_change' member_profile.user.id %}" target="_blank" class="btn btn-outline-secondary btn-sm" title="Edit in Admin">
+                    <a href="{% url 'admin:users_user_change' member_profile.user.id %}" target="_blank" class="btn btn-outline-secondary btn-sm" title="Edit in Admin">
                         <i class="fas fa-edit"></i> Edit User
                     </a>
                 </div>
@@ -40,7 +42,7 @@
                         </span>
                     </p>
 
-                    <form method="post" action="{% url 'update_member_status' profile_id=member_profile.id %}" class="mt-3">
+                    <form method="post" action="{% url 'users:update_member_status' profile_id=member_profile.id %}" class="mt-3">
                         {% csrf_token %}
                         <div class="input-group">
                              <label class="input-group-text" for="statusSelect">Change Status:</label>
@@ -62,7 +64,7 @@
                              <span class="badge text-bg-danger">Disabled</span>
                         {% endif %}
                       </p>
-                      <form method="post" action="{% url 'toggle_member_access' user_id=member_profile.user.id %}" class="d-inline" onsubmit="return confirm('Are you sure you want to {% if member_profile.user.is_active %}disable{% else %}enable{% endif %} login access for {{ member_profile.user.username }}?');">
+                      <form method="post" action="{% url 'users:toggle_member_access' user_id=member_profile.user.id %}" class="d-inline" onsubmit="return confirm('Are you sure you want to {% if member_profile.user.is_active %}disable{% else %}enable{% endif %} this member?');">
                          {% csrf_token %}
                          {% if member_profile.user.is_active %}
                              <button type="submit" class="btn btn-warning btn-sm" title="Disable user login">
@@ -83,12 +85,12 @@
             <div class="card mb-4">
                  <div class="card-header">Financial Summary</div>
                  <div class="card-body">
-                     <p><strong>Total Amount Due:</strong> £{{ total_due|floatformat:2 }}</p>
-                     <p><strong>Total Amount Paid:</strong> £{{ total_paid|floatformat:2 }}</p>
+                     <p><strong>Total Amount Due:</strong> ₦{{ total_due|floatformat:2|intcomma }}</p>
+                     <p><strong>Total Amount Paid:</strong> ₦{{ total_paid|floatformat:2|intcomma }}</p>
                      <h5 class="mt-2">
                          <strong>Current Balance:</strong>
                          <span class="{% if balance >= 0 %}text-success{% else %}text-danger{% endif %}">
-                             £{{ balance|floatformat:2 }}
+                             ₦{{ balance|floatformat:2|intcomma }}
                          </span>
                          {% if balance < 0 %} (Amount Owing){% elif balance > 0 %} (In Credit){% else %} (Settled){% endif %}
                      </h5>
@@ -109,7 +111,7 @@
                             {% for payment in payments %}
                                 <tr>
                                     <td>{{ payment.payment_date|date:"Y-m-d" }}</td>
-                                    <td>£{{ payment.amount_paid|floatformat:2 }}</td>
+                                    <td>₦{{ payment.amount_paid|floatformat:2|intcomma }}</td>
                                     <td>{{ payment.notes|default:"" }}</td>
                                     <td>{{ payment.recorded_by.username|default:"N/A" }}</td>
                                 </tr>
@@ -133,7 +135,7 @@
                                 <tr>
                                     <td>{{ due.due_date|date:"Y-m-d" }}</td>
                                     <td>{{ due.description }}</td>
-                                    <td>£{{ due.amount_due|floatformat:2 }}</td>
+                                    <td>₦{{ due.amount_due|floatformat:2|intcomma }}</td>
                                 </tr>
                              {% empty %}
                                 <tr><td colspan="3" class="text-center">No dues recorded.</td></tr>

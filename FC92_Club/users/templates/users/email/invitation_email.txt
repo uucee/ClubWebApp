@@ -1,11 +1,19 @@
-Dear Future Member,
+Dear {{ first_name }},
 
 You have been invited to join FC92 Club!
 
-Click the link below to create your account and complete your profile:
+To complete your registration, please click the link below:
 {{ invitation_link }}
 
+After clicking the link, you will be asked to:
+1. Choose your username
+2. Set your password
+3. Complete your profile information
+4. Accept the club's terms and conditions
+
 This invitation link will expire in 7 days.
+
+If you have any questions, please contact the club administrator.
 
 Best regards,
 FC92 Club Team 

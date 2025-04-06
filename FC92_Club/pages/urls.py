@@ -4,6 +4,8 @@
 from django.urls import path
 from . import views
 
+app_name = 'pages'
+
 # If you want '/announcements/' page later:
 # urlpatterns = [
 #    path('announcements/', views.announcement_list, name='announcement_list'),

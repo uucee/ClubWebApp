@@ -1,80 +1,122 @@
 <!-- templates/base.html -->
 {% load static %}
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Club Management{% endblock %}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FC92 Club{% endblock %}</title>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Optional: Add custom CSS file -->
     <!-- <link rel="stylesheet" href="{% static 'css/custom.css' %}"> -->
-    {% block extra_head %}{% endblock %}
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="{% url 'home' %}">FC92 Club</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="{% url 'home' %}">Home</a>
+                        <a class="nav-link" href="{% url 'home' %}">
+                            <i class="fas fa-home"></i> Home
+                        </a>
                     </li>
                     {% if user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'profile_view' %}">My Profile & Finances</a>
-                        </li>
-                         <!-- Financial Secretary Links -->
-                        {% if user.profile.is_financial_secretary %}
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Finances (FS)
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="{% url 'financial_dashboard' %}">FS Dashboard</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'record_payment' %}">Record Payment</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'manage_dues' %}">Manage Dues</a></li>
-                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="{% url 'member_list_admin' %}">Member List (Admin)</a></li>
-                                </ul>
-                            </li>
-                        {% endif %}
-                         <!-- Admin Links (Add more specific admin links if needed) -->
-                        {% if user.profile.is_admin %}
-                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'admin:index' %}" target="_blank">Django Admin</a>
-                             </li>
-                         {% endif %}
-                    {% endif %}
-                     <!-- Add Blog Link later -->
-                </ul>
-                <ul class="navbar-nav">
-                     {% if user.is_authenticated %}
-                        <li class="nav-item">
-                           <span class="navbar-text me-3">Welcome, {{ user.username }}!</span>
-                        </li>
-                         <li class="nav-item">
-                            <form method="post" action="{% url 'logout' %}">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-outline-light btn-sm">Logout</button>
-                            </form>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'login' %}">Login</a>
-                        </li>
-                        <!-- Add registration link if needed -->
-                    {% endif %}
-                    {% if user.is_authenticated and user.profile.is_admin %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'member_list_admin' %}">Member List</a>
+                        <a class="nav-link" href="{% url 'users:profile_view' %}">
+                            <i class="fas fa-user"></i> My Profile
+                        </a>
+                    </li>
+                    {% if user.is_financial_secretary or user.is_admin or user.is_superuser %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'users:member_management' %}">
+                            <i class="fas fa-users"></i> Member Management
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'member_management' %}">Manage Members</a>
+                        <a class="nav-link" href="{% url 'users:financial_report' %}">
+                            <i class="fas fa-chart-bar"></i> Financial Report
+                        </a>
+                    </li>
+                    {% if user.is_financial_secretary %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-money-bill-wave"></i> Financial Tools
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'finances:record_payment' %}">
+                                    <i class="fas fa-plus-circle"></i> Record Payment
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'finances:manage_dues' %}">
+                                    <i class="fas fa-cog"></i> Manage Dues
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'finances:financial_dashboard' %}">
+                                    <i class="fas fa-tachometer-alt"></i> Financial Dashboard
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                    {% if user.is_admin or user.is_superuser %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-cogs"></i> Admin Tools
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'users:member_list_admin' %}">
+                                    <i class="fas fa-list"></i> Member List
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'admin:index' %}" target="_blank">
+                                    <i class="fas fa-tools"></i> Django Admin
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                    {% endif %}
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <span class="navbar-text me-3">
+                            <i class="fas fa-user-circle"></i> Welcome, {{ user.get_full_name|default:user.username }}!
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'users:profile_edit' %}">
+                            <i class="fas fa-cog"></i> Settings
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <form method="post" action="{% url 'logout' %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-link nav-link" style="border: none; background: none; color: rgba(255,255,255,.55);">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </button>
+                        </form>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </a>
                     </li>
                     {% endif %}
                 </ul>
@@ -82,20 +124,22 @@
         </div>
     </nav>
 
-    <main class="container mb-5">
+    <!-- Messages -->
+    <div class="container mt-3">
         {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
         {% endif %}
+    </div>
 
-        {% block content %}
-        <!-- Default content goes here -->
-        {% endblock %}
-    </main>
+    <!-- Main Content -->
+    <div class="container mt-4">
+        {% block content %}{% endblock %}
+    </div>
 
     <footer class="footer mt-auto py-3 bg-light text-center">
         <div class="container">
@@ -103,8 +147,8 @@
         </div>
     </footer>
 
-    <!-- Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
-    {% block extra_scripts %}{% endblock %}
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

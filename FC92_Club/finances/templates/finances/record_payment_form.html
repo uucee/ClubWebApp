@@ -11,18 +11,15 @@
                     <h2>Record New Payment</h2>
                 </div>
                 <div class="card-body">
-                    <form method="post" novalidate id="record-payment-form"> {# Use POST method; novalidate prevents default browser validation #}
-                        {% csrf_token %} {# Include CSRF token for security #}
-
-                        {% crispy form %} {# Render the entire form using crispy-forms and bootstrap5 template pack #}
-
-                        <div class="mt-4"> {# Add some margin top for the buttons #}
-                            <button type="submit" class="btn btn-success" id="submit-payment">
-                                <i class="fas fa-check me-2"></i>Record Payment {# Optional: Add an icon #}
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check me-2"></i>Record Payment
                             </button>
-                            {# Link back to FS dashboard or member list? Dashboard seems appropriate #}
-                            <a href="{% url 'financial_dashboard' %}" class="btn btn-secondary">
-                                <i class="fas fa-times me-2"></i>Cancel {# Optional: Add an icon #}
+                            <a href="{% url 'finances:financial_dashboard' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
                             </a>
                         </div>
                     </form>

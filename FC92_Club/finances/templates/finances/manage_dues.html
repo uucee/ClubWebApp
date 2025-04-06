@@ -60,7 +60,7 @@
                     <tr>
                         <td>{{ due.member.user.username }}</td>
                         <td>{{ due.description }}</td>
-                        <td>£{{ due.amount_due|floatformat:2 }}</td>
+                        <td>₦{{ due.amount_due|floatformat:2 }}</td>
                         <td>{{ due.due_date|date:"Y-m-d" }}</td>
                         <td>{{ due.created_at|date:"Y-m-d H:i" }}</td>
                     </tr>
