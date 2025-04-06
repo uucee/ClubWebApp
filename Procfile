@@ -1,1 +1,1 @@
-web: gunicorn FC92_Club.wsgi:application 
+web: cd FC92_Club && gunicorn FC92_Club.wsgi:application 
