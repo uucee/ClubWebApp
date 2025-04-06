@@ -1,37 +1,34 @@
-# Use Python 3.11 slim image
+# Use Python 3.11 as the base image
 FROM python:3.11-slim
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV PORT=8000
-ENV DJANGO_SETTINGS_MODULE=FC92_Club.settings
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
 # Set work directory
 WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    postgresql-client \
-    netcat-traditional \
+    build-essential \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project files
+# Copy project
 COPY . .
 
-# Make startup script executable
-RUN chmod +x startup.sh
+# Set the correct working directory for manage.py
+WORKDIR /app/FC92_Club
+
+# Create staticfiles directory
+RUN mkdir -p staticfiles
 
 # Collect static files
 RUN python manage.py collectstatic --noinput
 
-# Create a non-root user
-RUN useradd -m appuser && chown -R appuser:appuser /app
-USER appuser
-
-# Run the application
-CMD ["./startup.sh"] 
+# Run migrations and start the application
+CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"] 
