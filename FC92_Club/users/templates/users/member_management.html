@@ -39,6 +39,7 @@
                     <select class="form-control" id="role" name="role">
                         <option value="MEMBER">Member</option>
                         <option value="FINANCIAL_SECRETARY">Financial Secretary</option>
+                        <option value="ADMIN">Administrator</option>
                     </select>
                 </div>
                 {% else %}
@@ -69,7 +70,7 @@
                     <small class="form-text text-muted">
                         CSV format: first_name,last_name,email{% if request.user.profile.is_admin %},role{% endif %}<br>
                         {% if request.user.profile.is_admin %}
-                        Role options: MEMBER, FINANCIAL_SECRETARY
+                        Role options: MEMBER, FINANCIAL_SECRETARY, ADMIN
                         {% else %}
                         All members will be added as regular members
                         {% endif %}

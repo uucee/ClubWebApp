@@ -100,9 +100,10 @@ def profile_edit(request, username=None):
 @user_passes_test(is_financial_secretary_or_admin)
 def member_list(request):
     """Admin/FS view to list all members with their financial balance."""
+    # First get all non-superuser profiles
     profiles = Profile.objects.select_related('user') \
-        .exclude(role=Profile.Role.ADMIN) \
         .exclude(user__is_superuser=True) \
+        .filter(user__is_superuser=False) \
         .annotate(
             total_dues=Coalesce(
                 Sum('dues__amount_due', distinct=True),
@@ -227,7 +228,7 @@ def add_single_member(request):
                 )
 
                 # Create profile with proper role value and invitation token
-                role_value = 'FS' if role == 'FINANCIAL_SECRETARY' else 'MEM'
+                role_value = 'FS' if role == 'FINANCIAL_SECRETARY' else ('ADM' if role == 'ADMIN' else 'MEM')
                 profile = Profile.objects.create(
                     user=user,
                     role=role_value,
@@ -309,7 +310,7 @@ def bulk_upload_members(request):
                         )
                         
                         # Create profile with proper role value
-                        role_value = 'FS' if role == 'FINANCIAL_SECRETARY' else 'MEM'
+                        role_value = 'FS' if role == 'FINANCIAL_SECRETARY' else ('ADM' if role == 'ADMIN' else 'MEM')
                         profile = Profile.objects.create(
                             user=user,
                             role=role_value,

@@ -55,6 +55,11 @@ def manage_dues(request):
     individual_due_form = DueForm(prefix="individual")
     bulk_due_form = BulkDueForm(prefix="bulk")
 
+    # Get recent dues excluding superusers
+    recent_dues = Due.objects.select_related('member__user') \
+        .filter(member__user__is_superuser=False) \
+        .order_by('-created_at')[:10]
+
     if request.method == 'POST':
         print("POST request received")  # Debug log
         print("POST data:", request.POST)  # Debug log
@@ -89,7 +94,11 @@ def manage_dues(request):
                 description = bulk_due_form.cleaned_data['description']
                 due_date = bulk_due_form.cleaned_data['due_date']
 
-                active_members = Profile.objects.filter(status=Profile.Status.ACTIVE)
+                # Get active members excluding superusers
+                active_members = Profile.objects.filter(
+                    status=Profile.Status.ACTIVE,
+                    user__is_superuser=False
+                )
                 dues_to_create = []
                 for profile in active_members:
                     dues_to_create.append(
@@ -98,27 +107,19 @@ def manage_dues(request):
 
                 if dues_to_create:
                     try:
-                        print(f"Creating {len(dues_to_create)} bulk dues")  # Debug log
                         Due.objects.bulk_create(dues_to_create)
-                        messages.success(request, f"Bulk due '{description}' added for {len(dues_to_create)} active members.")
+                        messages.success(request, f"Added dues of ₦{amount} to {len(dues_to_create)} active members.")
                         return redirect('finances:manage_dues')
                     except Exception as e:
-                        print(f"Error saving bulk dues: {str(e)}")  # Debug log
-                        messages.error(request, f"Error saving bulk dues: {str(e)}")
-                else:
-                    messages.warning(request, "No active members found to apply bulk due.")
+                        messages.error(request, f"Error creating bulk dues: {str(e)}")
             else:
-                print("Bulk form validation failed")  # Debug log
-                print("Form errors:", bulk_due_form.errors)  # Debug log
                 messages.error(request, 'Error in bulk due form. Please check the details entered.')
                 individual_due_form = DueForm(prefix="individual")
 
-    # Prepare context for GET request or for re-rendering after POST error
-    dues_list = Due.objects.select_related('member__user').order_by('-created_at')[:20]
     context = {
         'individual_form': individual_due_form,
         'bulk_form': bulk_due_form,
-        'recent_dues': dues_list,
+        'recent_dues': recent_dues
     }
     return render(request, 'finances/manage_dues.html', context)
 
