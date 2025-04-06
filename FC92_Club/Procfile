@@ -1,0 +1,1 @@
+web: gunicorn FC92_Club.wsgi:application 
