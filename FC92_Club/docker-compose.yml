@@ -3,10 +3,10 @@ version: '3.8'
 services:
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/app
-    working_dir: /app/FC92_Club
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
     ports:
       - "8001:8000"
     environment:
@@ -20,6 +20,7 @@ services:
       - POSTGRES_PORT=5432
     depends_on:
       - db
+      - mailhog
 
   db:
     image: postgres:15
@@ -32,5 +33,13 @@ services:
     ports:
       - "5433:5432"
 
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1026:1025"  # SMTP port
+      - "8026:8025"  # Web interface port
+
 volumes:
-  postgres_data: 
+  postgres_data:
+  static_volume:
+  media_volume: 

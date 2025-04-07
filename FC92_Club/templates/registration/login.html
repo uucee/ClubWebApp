@@ -5,36 +5,40 @@
 {% block title %}Login{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h2>Login</h2>
-            </div>
-            <div class="card-body">
-                 {% if form.errors %}
-                    <div class="alert alert-danger">
-                        Your username and password didn't match. Please try again.
-                    </div>
-                {% endif %}
-
-                {% if next %}
-                    {% if user.is_authenticated %}
-                    <p class="alert alert-warning">Your account doesn't have access to this page. To proceed,
-                    please login with an account that has access.</p>
-                    {% else %}
-                     <p class="alert alert-info">Please login to see this page.</p>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">Member Login</h3>
+                </div>
+                <div class="card-body">
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            Your username and password didn't match. Please try again.
+                        </div>
                     {% endif %}
-                {% endif %}
 
-                <form method="post" action="{% url 'login' %}">
-                    {% csrf_token %}
-                    {{ form|crispy }}
-                    <input type="hidden" name="next" value="{{ next }}">
-                    <button type="submit" class="btn btn-primary mt-3">Login</button>
-                </form>
-                {# Assumes you setup password_reset #}
-                {# <p class="mt-3"><a href="{% url 'password_reset' %}">Lost password?</a></p> #}
+                    {% if next %}
+                        {% if user.is_authenticated %}
+                        <p class="alert alert-warning">Your account doesn't have access to this page. To proceed,
+                        please login with an account that has access.</p>
+                        {% else %}
+                         <p class="alert alert-info">Please login to see this page.</p>
+                        {% endif %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <div class="form-group mt-3">
+                            <button type="submit" class="btn btn-primary w-100">Login</button>
+                        </div>
+                    </form>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'password_reset' %}" class="text-muted">Forgot Password?</a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

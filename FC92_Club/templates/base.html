@@ -81,11 +81,13 @@
                                     <i class="fas fa-list"></i> Member List
                                 </a>
                             </li>
+                            {% if user.is_superuser %}
                             <li>
                                 <a class="dropdown-item" href="{% url 'admin:index' %}" target="_blank">
                                     <i class="fas fa-tools"></i> Django Admin
                                 </a>
                             </li>
+                            {% endif %}
                         </ul>
                     </li>
                     {% endif %}
