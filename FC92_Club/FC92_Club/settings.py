@@ -136,15 +136,16 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
-# In development, use the default storage
-if DEBUG:
-    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
-else:
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Always use WhiteNoise for static files in production
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Create static directory if it doesn't exist
+os.makedirs(os.path.join(BASE_DIR, 'static'), exist_ok=True)
+os.makedirs(os.path.join(BASE_DIR, 'staticfiles'), exist_ok=True)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -169,6 +170,14 @@ EMAIL_HOST = config('EMAIL_HOST', default='mailhog')
 EMAIL_PORT = config('EMAIL_PORT', default=1025, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=False, cast=bool)
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@fc92club.com')
+
+# CSRF Settings
+CSRF_TRUSTED_ORIGINS = [
+    'https://fc92-club-a937acc42cda.herokuapp.com',
+    'https://*.herokuapp.com'
+]
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
 
 # Configure Django App for Heroku
 django_heroku.settings(locals())
