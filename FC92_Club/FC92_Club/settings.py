@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 import dj_database_url
-from decouple import config
+from decouple import config, Csv  # Import Csv
 import django_heroku
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -23,13 +23,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-your-secret-key-here')
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
-
+ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=Csv())
 
 # Application definition
 
@@ -50,6 +49,7 @@ INSTALLED_APPS = [
     'finances.apps.FinancesConfig',
     'pages.apps.PagesConfig',
     'django.contrib.humanize',
+    'gallery.apps.GalleryConfig',
 ]
 
 MIDDLEWARE = [
@@ -69,7 +69,9 @@ ROOT_URLCONF = 'FC92_Club.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates'),  # Make sure this points to your templates directory
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -88,11 +90,16 @@ WSGI_APPLICATION = 'FC92_Club.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+SQL_DATABASE = config('SQL_DATABASE')
+SQL_USER = config('SQL_USER')
+SQL_PASSWORD = config('SQL_PASSWORD')
+SQL_HOST = config('SQL_HOST')
+SQL_PORT = config('SQL_PORT')
+
+DATABASE_URL = f"postgres://{SQL_USER}:{SQL_PASSWORD}@{SQL_HOST}:{SQL_PORT}/{SQL_DATABASE}"
+
 DATABASES = {
-    'default': dj_database_url.config(
-        default=config('DATABASE_URL', default='postgres://postgres:postgres@db:5432/fc92_club'),
-        conn_max_age=600
-    )
+    'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
 }
 
 
@@ -160,24 +167,43 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 # Login/Logout Redirects
-LOGIN_REDIRECT_URL = 'home'  # Redirect to home after login
+LOGIN_REDIRECT_URL = 'pages:home'  # Redirect to home after login
 LOGIN_URL = 'login'  # URL to redirect to for login
-LOGOUT_REDIRECT_URL = 'home'  # Redirect to home after logout
+LOGOUT_REDIRECT_URL = 'pages:home'  # Redirect to home after logout
 
 # Email Configuration
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = config('EMAIL_HOST', default='mailhog')
-EMAIL_PORT = config('EMAIL_PORT', default=1025, cast=int)
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=False, cast=bool)
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@fc92club.com')
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'mailhog'  # Service name from docker-compose
+    EMAIL_PORT = 1025       # MailHog SMTP port
+    EMAIL_USE_TLS = False
+    EMAIL_HOST_USER = ''
+    EMAIL_HOST_PASSWORD = ''
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = config('EMAIL_HOST')
+    EMAIL_PORT = config('EMAIL_PORT', cast=int)
+    EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+    EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+    EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool)
+    DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
+
+
+# Session settings
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 86400  # 24 hours
+SESSION_COOKIE_SECURE = True  # Use only with HTTPS
+SESSION_SAVE_EVERY_REQUEST = True
 
 # CSRF Settings
 CSRF_TRUSTED_ORIGINS = [
     'https://fc92-club-a937acc42cda.herokuapp.com',
-    'https://*.herokuapp.com'
+    'https://*.herokuapp.com',
+    'https://yoursite.com'
 ]
 CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = True
 
 # Configure Django App for Heroku
-django_heroku.settings(locals())
+#django_heroku.settings(locals())

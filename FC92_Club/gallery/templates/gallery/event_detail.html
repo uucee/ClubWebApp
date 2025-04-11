@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h1 class="card-title">{{ event.title }}</h1>
+                        {% if user.profile.role == 'ADM' %}
+                            <div class="btn-group">
+                                <a href="{% url 'gallery:event_edit' event.pk %}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <a href="{% url 'gallery:event_delete' event.pk %}" class="btn btn-outline-danger btn-sm">
+                                    <i class="fas fa-trash"></i> Delete
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="text-muted mb-3">
+                        <p>
+                            <i class="fas fa-calendar-alt"></i> {{ event.date|date:"F j, Y, g:i a" }}
+                            <br>
+                            <i class="fas fa-map-marker-alt"></i> {{ event.location }}
+                        </p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        {{ event.description|linebreaks }}
+                    </div>
+
+                    {% if user.profile.role == 'ADM' %}
+                        <div class="mb-4">
+                            <a href="{% url 'gallery:photo_upload' event.pk %}" class="btn btn-primary">
+                                <i class="fas fa-upload"></i> Upload Photos
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Photos</h2>
+            {% if photos %}
+                <div class="row">
+                    {% for photo in photos %}
+                        <div class="col-md-4 mb-4">
+                            <div class="card">
+                                <img src="{{ photo.image.url }}" class="card-img-top" alt="{{ photo.caption }}">
+                                <div class="card-body">
+                                    <p class="card-text">{{ photo.caption }}</p>
+                                    <div class="text-muted small">
+                                        Uploaded by {{ photo.uploaded_by.get_full_name }} on {{ photo.uploaded_at|date:"F j, Y" }}
+                                    </div>
+                                    {% if user.profile.role == 'ADM' %}
+                                        <div class="mt-2">
+                                            <a href="{% url 'gallery:photo_edit' photo.pk %}" class="btn btn-outline-secondary btn-sm">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'gallery:photo_delete' photo.pk %}" class="btn btn-outline-danger btn-sm">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    No photos have been uploaded for this event yet.
+                    {% if user.profile.role == 'ADM' %}
+                        <a href="{% url 'gallery:photo_upload' event.pk %}" class="alert-link">Upload some photos!</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

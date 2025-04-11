@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Events Gallery{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Events Gallery</h1>
+        {% if user.profile.role == 'ADM' %}
+            <a href="{% url 'gallery:event_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Create New Event
+            </a>
+        {% endif %}
+    </div>
+
+    {% if page_obj %}
+        <div class="row">
+            {% for event in page_obj %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        {% with event.photos.first as first_photo %}
+                            {% if first_photo %}
+                                <img src="{{ first_photo.image.url }}" class="card-img-top" alt="{{ event.title }}">
+                            {% else %}
+                                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                    <i class="fas fa-image fa-3x text-muted"></i>
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ event.title }}</h5>
+                            <p class="card-text text-muted">
+                                <i class="fas fa-calendar-alt"></i> {{ event.date|date:"F j, Y" }}
+                                <br>
+                                <i class="fas fa-map-marker-alt"></i> {{ event.location }}
+                            </p>
+                            <p class="card-text">{{ event.description|truncatewords:20 }}</p>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <a href="{% url 'gallery:event_detail' event.pk %}" class="btn btn-outline-primary btn-sm">
+                                View Details
+                            </a>
+                            {% if user.profile.role == 'ADM' %}
+                                <div class="btn-group float-end">
+                                    <a href="{% url 'gallery:event_edit' event.pk %}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'gallery:event_delete' event.pk %}" class="btn btn-outline-danger btn-sm">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        {% if page_obj.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info">
+            No events found. {% if user.profile.role == 'ADM' %}Create your first event!{% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

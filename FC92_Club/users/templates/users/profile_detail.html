@@ -4,10 +4,10 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}My Profile - {{ block.super }}{% endblock %}
+{% block title %}{% if is_viewing_own_profile %}My Profile{% else %}{{ profile.user.get_full_name }}'s Profile{% endif %} - {{ block.super }}{% endblock %}
 
 {% block content %}
-    <h2>My Profile & Financial Status</h2>
+    <h2>{% if is_viewing_own_profile %}My Profile{% else %}{{ profile.user.get_full_name }}'s Profile{% endif %} & Financial Status</h2>
     <hr>
 
     <div class="row">
@@ -16,14 +16,18 @@
             <div class="card mb-4">
                 <div class="card-header">
                     Profile Details
-                    <a href="{% url 'users:profile_edit' %}" class="btn btn-sm btn-outline-secondary float-end">Edit Profile</a>
+                    {% if is_viewing_own_profile %}
+                        <a href="{% url 'users:profile_edit' %}" class="btn btn-sm btn-outline-secondary float-end">Edit Profile</a>
+                    {% elif is_admin %}
+                        <a href="{% url 'users:profile_edit_other' profile.user.username %}" class="btn btn-sm btn-outline-secondary float-end">Edit Profile</a>
+                    {% endif %}
                 </div>
                 <div class="card-body">
-                    <p><strong>Username:</strong> {{ user.username }}</p>
-                    <p><strong>Email:</strong> {{ user.email }}</p>
-                    <p><strong>Name:</strong> {{ user.get_full_name|default:"Not Set" }}</p>
-                    {% if user.middle_name %}
-                        <p><strong>Middle Name:</strong> {{ user.middle_name }}</p>
+                    <p><strong>Username:</strong> {{ profile.user.username }}</p>
+                    <p><strong>Email:</strong> {{ profile.user.email }}</p>
+                    <p><strong>Name:</strong> {{ profile.user.get_full_name|default:"Not Set" }}</p>
+                    {% if profile.user.middle_name %}
+                        <p><strong>Middle Name:</strong> {{ profile.user.middle_name }}</p>
                     {% endif %}
                     <p><strong>Role:</strong> {{ profile.get_role_display }}</p>
                     <p><strong>Membership Status:</strong> <span class="badge bg-{% if profile.status == 'ACT' %}success{% elif profile.status == 'SUS' %}warning{% else %}danger{% endif %}">{{ profile.get_status_display }}</span></p>
@@ -55,7 +59,7 @@
                          {% if balance < 0 %} (Amount Owing){% elif balance > 0 %} (In Credit){% else %} (Settled){% endif %}
                      </h5>
                      {% if profile.status == 'SUS' %}
-                        <p class="alert alert-warning mt-3">Your membership is currently suspended due to outstanding payments.</p>
+                        <p class="alert alert-warning mt-3">Membership is currently suspended due to outstanding payments.</p>
                      {% endif %}
                  </div>
             </div>

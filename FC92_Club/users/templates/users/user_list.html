@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}User List{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>User List</h1>
+    
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.get_role_display }}</td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'users:profile' user.username %}" class="btn btn-sm btn-primary">
+                                View
+                            </a>
+                            {% if request.user.is_staff %}
+                            <a href="{% url 'users:admin_reset_password' user.id %}" class="btn btn-sm btn-warning">
+                                Reset Password
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %} 

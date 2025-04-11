@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Announcements{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">Announcements</h2>
+                    <div>
+                        <a href="{% url 'pages:home' %}" class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-home"></i> Home
+                        </a>
+                        {% if is_admin %}
+                            <a href="{% url 'users:create_announcement' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> New Announcement
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% if announcements %}
+                        <div class="list-group">
+                            {% for announcement in announcements %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">{{ announcement.title }}</h5>
+                                        <small class="text-muted">{{ announcement.publish_date|naturaltime }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ announcement.content|linebreaks }}</p>
+                                    <small class="text-muted">
+                                        Posted by {{ announcement.author.get_full_name|default:"Unknown" }}
+                                        on {{ announcement.publish_date|date:"F d, Y" }}
+                                    </small>
+                                    {% if is_admin %}
+                                        <div class="mt-2">
+                                            <form method="post" action="{% url 'users:toggle_announcement' announcement.id %}" class="d-inline">
+                                                {% csrf_token %}
+                                                {% if announcement.is_published %}
+                                                    <button type="submit" class="btn btn-warning btn-sm">
+                                                        <i class="fas fa-eye-slash"></i> Hide
+                                                    </button>
+                                                {% else %}
+                                                    <button type="submit" class="btn btn-success btn-sm">
+                                                        <i class="fas fa-eye"></i> Show
+                                                    </button>
+                                                {% endif %}
+                                            </form>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-center">No announcements available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

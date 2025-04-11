@@ -27,5 +27,12 @@ RUN mkdir -p staticfiles
 # Collect static files
 RUN python manage.py collectstatic --noinput
 
-# Run migrations and start the application
-CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:$PORT"] 
+# Expose the port Gunicorn will run on
+EXPOSE 8000
+
+# Run migrations (consider running migrations as a separate step/job)
+# and start Gunicorn
+CMD ["sh", "-c", "python manage.py migrate && gunicorn FC92_Club.wsgi:application --bind 0.0.0.0:8000"]
+
+# Run migrations and start the application (initial code commented out)
+#CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"] 

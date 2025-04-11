@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    {% if event %}Edit {{ event.title }}{% else %}Create New Event{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">
+                        {% if event %}
+                            Edit Event: {{ event.title }}
+                        {% else %}
+                            Create New Event
+                        {% endif %}
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <div class="form-group mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                {% if event %}Update Event{% else %}Create Event{% endif %}
+                            </button>
+                            <a href="{% if event %}{% url 'gallery:event_detail' event.pk %}{% else %}{% url 'gallery:event_list' %}{% endif %}" 
+                               class="btn btn-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,26 @@
+# Environment variables
+.env
+.env.*
+!/.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+myenv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+/media/
+/staticfiles/
+
+# Other
+.DS_Store
+*.swp

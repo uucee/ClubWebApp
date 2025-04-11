@@ -1,5 +1,6 @@
 <!-- templates/base.html -->
 {% load static %}
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,16 +19,20 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'home' %}">FC92 Club</a>
+            <a class="navbar-brand" href="{% url 'pages:home' %}">
+                <img src="{% static 'fc92logo.jpg' %}" alt="FC92 Club Logo" height="40" class="d-inline-block align-text-top me-2">
+                FC92 Club
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home' %}">
-                            <i class="fas fa-home"></i> Home
-                        </a>
+                        <a class="nav-link" href="{% url 'pages:home' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'gallery:event_list' %}">Gallery</a>
                     </li>
                     {% if user.is_authenticated %}
                     <li class="nav-item">
@@ -77,7 +82,7 @@
                         </a>
                         <ul class="dropdown-menu">
                             <li>
-                                <a class="dropdown-item" href="{% url 'users:member_list_admin' %}">
+                                <a class="dropdown-item" href="{% url 'users:member_list' %}">
                                     <i class="fas fa-list"></i> Member List
                                 </a>
                             </li>

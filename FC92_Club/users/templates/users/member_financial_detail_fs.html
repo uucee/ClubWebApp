@@ -37,7 +37,7 @@
                     <hr>
                     <h5 class="card-title">Membership Status</h5>
                     <p>Current Status:
-                         <span class="badge fs-6 text-bg-{% if member_profile.status == member_profile.Status.ACTIVE %}success{% elif member_profile.status == member_profile.Status.SUSPENDED %}warning{% elif member_profile.status == member_profile.Status.REMOVED %}danger{% else %}secondary{% endif %}">
+                         <span class="badge fs-6 text-bg-{% if member_profile.status == 'ACT' %}success{% elif member_profile.status == 'SUS' %}warning{% elif member_profile.status == 'REM' %}danger{% else %}secondary{% endif %}">
                             {{ member_profile.get_status_display }}
                         </span>
                     </p>
@@ -47,7 +47,7 @@
                         <div class="input-group">
                              <label class="input-group-text" for="statusSelect">Change Status:</label>
                              <select class="form-select" id="statusSelect" name="status">
-                                {% for value, display in member_profile.Status.choices %}
+                                {% for value, display in member_profile.STATUS_CHOICES %}
                                     <option value="{{ value }}" {% if member_profile.status == value %}selected{% endif %}>{{ display }}</option>
                                 {% endfor %}
                              </select>
@@ -94,7 +94,7 @@
                          </span>
                          {% if balance < 0 %} (Amount Owing){% elif balance > 0 %} (In Credit){% else %} (Settled){% endif %}
                      </h5>
-                     {% if member_profile.status == member_profile.Status.SUSPENDED %}
+                     {% if member_profile.status == 'SUS' %}
                         <p class="alert alert-warning mt-3 small">Membership status is currently 'Suspended'.</p>
                      {% endif %}
                  </div>

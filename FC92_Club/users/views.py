@@ -10,23 +10,38 @@ from django.utils.crypto import get_random_string
 from django.db import transaction
 import csv
 from io import StringIO
-from .forms import ProfileUpdateForm
+from .forms import ProfileUpdateForm, AdminProfileUpdateForm, ProfileCompletionForm
 from .models import Profile, User
-from finances.models import Payment, Due # Import finance models
+from finances.models import Payment, Due
 from django.db.models import Sum, F, DecimalField
 from django.db.models.functions import Coalesce
-from decimal import Decimal # Import Decimal
+from decimal import Decimal
 from django.utils import timezone
 from datetime import timedelta
 from django.core.exceptions import PermissionDenied
 from django.views.decorators.csrf import csrf_protect
+from django.contrib.auth import get_user_model, login, authenticate
+from django.contrib.auth.hashers import make_password
+from django.utils.html import strip_tags
+from django.http import HttpResponse
+from django.urls import reverse_lazy
+from django.views.generic import ListView, DetailView, UpdateView, CreateView, DeleteView
+from django.views.generic.edit import FormView
+from django.http import HttpResponseForbidden, JsonResponse
+from django.db.models import Q
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth.views import PasswordChangeView
+from django.contrib.auth.mixins import UserPassesTestMixin
+from django.views import View
+from .decorators import admin_required, financial_secretary_required
+from .mixins import AdminRequiredMixin, FinancialSecretaryRequiredMixin
 
 # --- Permission Helper Functions ---
 def is_admin(user):
     return user.is_authenticated and user.is_admin
 
 def is_financial_secretary_or_admin(user):
-    return user.is_authenticated and (user.is_financial_secretary or user.is_admin or user.is_superuser)
+    return user.is_authenticated and (user.profile.role == 'FS' or user.profile.role == 'ADM' or user.is_superuser)
 
 # --- Member Views ---
 
@@ -36,12 +51,14 @@ def profile_view(request, username=None):
     if username:
         # Viewing another user's profile
         target_user = get_object_or_404(User, username=username)
-        if not (request.user.is_staff or request.user.profile.is_financial_secretary or request.user == target_user):
+        if not (request.user.profile.role == 'ADM' or request.user == target_user):
             raise PermissionDenied("You don't have permission to view this profile.")
         user_profile = target_user.profile
+        is_viewing_own_profile = False
     else:
         # Viewing own profile
         user_profile = request.user.profile
+        is_viewing_own_profile = True
 
     # Calculate financial status
     payments = Payment.objects.filter(member=user_profile)
@@ -58,6 +75,8 @@ def profile_view(request, username=None):
         'total_paid': total_paid,
         'total_due': total_due,
         'balance': balance,
+        'is_viewing_own_profile': is_viewing_own_profile,
+        'is_admin': request.user.profile.role == 'ADM'
     }
     return render(request, 'users/profile_detail.html', context)
 
@@ -124,24 +143,25 @@ def member_list(request):
     context = {'profiles': profiles}
     return render(request, 'users/member_list_admin.html', context)
 
-@user_passes_test(is_admin)
+@login_required
+@user_passes_test(lambda u: u.profile.role == 'ADM')
 def toggle_member_access(request, user_id):
     """Admin view to toggle User.is_active"""
     target_user = get_object_or_404(User, pk=user_id)
     if target_user.is_superuser: # Prevent locking out superuser
          messages.error(request, 'Cannot block a superuser.')
-         return redirect('users:member_list_admin') # Or wherever admin manages users
+         return redirect('users:member_list') # Or wherever admin manages users
 
     if request.method == 'POST':
         target_user.is_active = not target_user.is_active
         target_user.save()
         status = "enabled" if target_user.is_active else "disabled"
         messages.success(request, f'Access for {target_user.username} has been {status}.')
-        return redirect('users:member_list_admin') # Redirect back to the list
+        return redirect('users:member_list') # Redirect back to the list
 
     # Avoid direct GET toggle for security, maybe show a confirmation page?
     # For simplicity here, we just redirect if accessed via GET
-    return redirect('users:member_list_admin')
+    return redirect('users:member_list')
 
 
 @user_passes_test(is_financial_secretary_or_admin)
@@ -173,7 +193,7 @@ def update_member_status(request, profile_id):
     profile = get_object_or_404(Profile, pk=profile_id)
     if request.method == 'POST':
         new_status = request.POST.get('status')
-        if new_status in [s[0] for s in Profile.Status.choices]:
+        if new_status in [s[0] for s in Profile.STATUS_CHOICES]:
             profile.status = new_status
             profile.save()
             messages.success(request, f"{profile.user.username}'s status updated to {profile.get_status_display()}.")
@@ -202,17 +222,27 @@ def add_single_member(request):
             first_name = request.POST.get('first_name')
             last_name = request.POST.get('last_name')
             email = request.POST.get('email')
-            role = request.POST.get('role')
+            role = request.POST.get('role', 'MEM')  # Default to MEM if not specified
             send_invite = request.POST.get('send_invite') == 'on'
 
+            # Validate required fields
+            if not all([first_name, last_name, email]):
+                messages.error(request, 'Please fill in all required fields.')
+                return redirect('users:member_management')
+
             # Financial secretaries can only add regular members
-            if request.user.profile.is_financial_secretary and role == 'FINANCIAL_SECRETARY':
-                messages.error(request, 'Financial secretaries cannot add other financial secretaries.')
+            if request.user.profile.role == 'FS' and role != 'MEM':
+                messages.error(request, 'Financial secretaries can only add regular members.')
                 return redirect('users:member_management')
 
             # Check if user already exists
             if User.objects.filter(email=email).exists():
                 messages.error(request, f'User with email {email} already exists.')
+                return redirect('users:member_management')
+
+            # Validate role
+            if role not in [choice[0] for choice in Profile.ROLES]:
+                messages.error(request, 'Invalid role specified.')
                 return redirect('users:member_management')
 
             with transaction.atomic():
@@ -227,38 +257,58 @@ def add_single_member(request):
                     is_active=True
                 )
 
-                # Create profile with proper role value and invitation token
-                role_value = 'FS' if role == 'FINANCIAL_SECRETARY' else ('ADM' if role == 'ADMIN' else 'MEM')
-                profile = Profile.objects.create(
-                    user=user,
-                    role=role_value,
-                    invitation_token=get_random_string(32),
-                    invitation_sent_at=timezone.now()
-                )
+                profile = user.profile # Get the profile created by the signal
+                profile.role = role # Set the role specified in the form
+
+                email_sent_successfully = False # Flag to track email status
+                email_error_message = None # Store specific email error
 
                 if send_invite:
-                    # Send invitation email
-                    context = {
-                        'first_name': first_name,
-                        'last_name': last_name,
-                        'email': email,
-                        'invitation_link': request.build_absolute_uri(f'/users/accept-invitation/{profile.invitation_token}/'),
-                        'site_url': request.build_absolute_uri('/')
-                    }
-                    message = render_to_string('users/email/invitation_email.txt', context)
-                    send_mail(
-                        'Welcome to FC92 Club',
-                        message,
-                        settings.DEFAULT_FROM_EMAIL,
-                        [email],
-                        fail_silently=False,
-                    )
+                    try:
+                        # Prepare email context
+                    
+                        profile.invitation_token = get_random_string(32)
+                        profile.invitation_sent_at = timezone.now()
+                        context = {
+                            'first_name': first_name,
+                            'last_name': last_name,
+                            'email': email,
+                            'invitation_link': request.build_absolute_uri(f'/users/accept-invitation/{profile.invitation_token}/'),
+                        '   site_url': request.build_absolute_uri('/')
+                        }
+                        # Render email body
+                        message = render_to_string('users/email/invitation_email.txt', context)
+                        # Attempt to send email
+                        send_mail(
+                            'Welcome to FC92 Club',
+                            message,
+                            settings.DEFAULT_FROM_EMAIL,
+                            [email],
+                            fail_silently=False,
+                        )
+                        email_sent_successfully = True # Mark as success if no exception
 
-                messages.success(request, f'Member {first_name} {last_name} added successfully.')
-                if send_invite:
+                    except Exception as email_error: # Catch ANY exception during email process
+                        # Log the specific email error for debugging
+                        print(f"ERROR sending invitation email to {email}: {email_error}")
+                        # Optionally use logging module: import logging; logging.exception(f"ERROR sending invitation email to {email}")
+                        email_error_message = str(email_error) # Store error message for user feedback
+
+                profile.save() # Save the profile changes (role, token, sent_at)
+         # Display messages outside the transaction block
+            messages.success(request, f'Member {first_name} {last_name} added successfully.')
+            if send_invite:
+                if email_sent_successfully:
                     messages.info(request, 'Invitation email sent.')
-        except Exception as e:
-            messages.error(request, f'Error adding member: {str(e)}')
+                else:
+                    # Provide specific feedback if email failed
+                    messages.warning(request, f'Member added, but failed to send invitation email: {email_error_message or "Unknown error"}')
+
+        except Exception as e: # Catch other potential errors (e.g., user creation)
+             # Avoid catching the email error again if it was already handled
+            if 'email_error' not in locals() or e is not email_error:
+                 messages.error(request, f'Error adding member: {str(e)}')
+
 
     return redirect('users:member_management')
 
@@ -292,10 +342,12 @@ def bulk_upload_members(request):
                     if User.objects.filter(email=row['email']).exists():
                         raise ValueError(f"User with email {row['email']} already exists")
                         
-                    # Determine role (default to MEMBER if not specified or not admin)
-                    role = row.get('role', 'MEMBER')
+                    # Determine role (default to MEM if not specified or not admin)
+                    role = row.get('role', 'MEM')
                     if not request.user.profile.is_admin:
-                        role = 'MEMBER'  # Force member role for non-admin users
+                        role = 'MEM'  # Force member role for non-admin users
+                    elif role not in ['MEM', 'ADM', 'FS']:
+                        role = 'MEM'  # Default to member if invalid role specified
                         
                     with transaction.atomic():
                         # Create user with temporary password
@@ -309,16 +361,12 @@ def bulk_upload_members(request):
                             is_active=True
                         )
                         
-                        # Create profile with proper role value
-                        role_value = 'FS' if role == 'FINANCIAL_SECRETARY' else ('ADM' if role == 'ADMIN' else 'MEM')
-                        profile = Profile.objects.create(
-                            user=user,
-                            role=role_value,
-                            invitation_token=get_random_string(32) if send_invite else None,
-                            invitation_sent_at=timezone.now() if send_invite else None
-                        )
-                        
+                        profile = user.profile # Get the profile created by the signal
+                        profile.role = role # Set the role specified in the form
+
                         if send_invite:
+                            profile.invitation_token = get_random_string(32)
+                            profile.invitation_sent_at = timezone.now()
                             # Send invitation email
                             context = {
                                 'first_name': row['first_name'],
@@ -335,11 +383,14 @@ def bulk_upload_members(request):
                                 [row['email']],
                                 fail_silently=False,
                             )
+                        profile.save() # Save the profile changes (role, token, sent_at)
                         
                         success_count += 1
                 except Exception as e:
                     error_count += 1
                     messages.error(request, f'Error processing {row.get("email", "unknown")}: {str(e)}')
+            
+            
             
             if success_count > 0:
                 messages.success(request, f'Successfully processed {success_count} member(s).')
@@ -381,15 +432,13 @@ def send_bulk_invites(request):
                         is_active=True
                     )
                     
-                    # Create profile with invitation token
-                    profile = Profile.objects.create(
-                        user=user,
-                        role='MEM',  # Regular member
-                        invitation_token=get_random_string(32),
-                        invitation_sent_at=timezone.now()
-                    )
-                    
+                    profile = user.profile # Get the profile created by the signal
+                    profile.role = 'MEM' # Set the role specified in the form
+
                     # Send invitation email
+                    profile.invitation_token = get_random_string(32)
+                    profile.invitation_sent_at = timezone.now()
+                    
                     context = {
                         'email': email,
                         'invitation_link': request.build_absolute_uri(f'/users/accept-invitation/{profile.invitation_token}/'),
@@ -403,6 +452,8 @@ def send_bulk_invites(request):
                         [email],
                         fail_silently=False,
                     )
+                    profile.save() # Save the profile changes (role, token, sent_at)
+                    
                     success_count += 1
                 except Exception as e:
                     error_count += 1
@@ -418,98 +469,8 @@ def send_bulk_invites(request):
             
     return redirect('users:member_management')
 
-@csrf_protect
-def accept_invitation(request, token):
-    """Handle invitation acceptance and profile completion."""
-    try:
-        profile = Profile.objects.get(invitation_token=token)
-        
-        # Check if invitation is expired (7 days)
-        if profile.invitation_sent_at and (timezone.now() - profile.invitation_sent_at) > timedelta(days=7):
-            messages.error(request, 'This invitation link has expired. Please contact the club administrator for a new invitation.')
-            return redirect('pages:home')
-            
-        if request.method == 'POST':
-            # Get form data directly from request.POST
-            username = request.POST.get('username')
-            password = request.POST.get('password')
-            password_confirm = request.POST.get('password_confirm')
-            first_name = request.POST.get('first_name')
-            middle_name = request.POST.get('middle_name')
-            last_name = request.POST.get('last_name')
-            phone = request.POST.get('phone')
-            address = request.POST.get('address')
-            city = request.POST.get('city')
-            country = request.POST.get('country')
-            
-            # Validate all required fields
-            if not all([username, password, password_confirm, first_name, last_name, phone, address, city, country]):
-                messages.error(request, 'Please fill in all required fields.')
-                return redirect('users:accept_invitation', token=token)
-            
-            # Validate password match
-            if password != password_confirm:
-                messages.error(request, 'Passwords do not match.')
-                return redirect('users:accept_invitation', token=token)
-            
-            # Validate password strength
-            if len(password) < 8:
-                messages.error(request, 'Password must be at least 8 characters long.')
-                return redirect('users:accept_invitation', token=token)
-            
-            # Check if username is already taken by another user
-            if User.objects.filter(username=username).exclude(id=profile.user.id).exists():
-                messages.error(request, 'This username is already taken. Please choose another one.')
-                return redirect('users:accept_invitation', token=token)
-            
-            try:
-                # Update user information
-                user = profile.user
-                user.username = username
-                user.set_password(password)  # This hashes the password
-                user.first_name = first_name
-                user.middle_name = middle_name
-                user.last_name = last_name
-                user.save()
-                
-                # Update profile
-                profile.phone = phone
-                profile.address = address
-                profile.city = city
-                profile.country = country
-                profile.status = 'ACT'  # Activate the profile
-                profile.invitation_token = None  # Clear the token
-                profile.save()
-                
-                # Log the user in with their new credentials
-                from django.contrib.auth import login
-                login(request, user)
-                
-                messages.success(request, 'Your profile has been updated successfully.')
-                return redirect('users:profile_view')
-            except Exception as e:
-                messages.error(request, f'Error updating profile: {str(e)}')
-                return redirect('users:accept_invitation', token=token)
-            
-        # Pre-populate form with existing user data
-        user = profile.user
-        context = {
-            'profile': profile,
-            'initial_data': {
-                'first_name': user.first_name,
-                'middle_name': user.middle_name,
-                'last_name': user.last_name,
-                'email': user.email,
-                'username': user.email,  # Default username to email
-            }
-        }
-        return render(request, 'users/accept_invitation.html', context)
-        
-    except Profile.DoesNotExist:
-        messages.error(request, 'Invalid invitation link.')
-        return redirect('pages:home')
-
-@user_passes_test(is_admin)
+@login_required
+@user_passes_test(lambda u: u.profile.role == 'ADM')
 def delete_member(request, user_id):
     """Admin view to delete a member and their profile."""
     target_user = get_object_or_404(User, pk=user_id)
@@ -517,7 +478,7 @@ def delete_member(request, user_id):
     # Prevent deleting superusers
     if target_user.is_superuser:
         messages.error(request, 'Cannot delete a superuser.')
-        return redirect('users:member_list_admin')
+        return redirect('users:member_list')
     
     if request.method == 'POST':
         try:
@@ -527,7 +488,7 @@ def delete_member(request, user_id):
         except Exception as e:
             messages.error(request, f'Error deleting member: {str(e)}')
         
-        return redirect('users:member_list_admin')
+        return redirect('users:member_list')
 
 @user_passes_test(is_financial_secretary_or_admin)
 def financial_report(request):
@@ -625,3 +586,114 @@ def financial_report(request):
         return response
 
     return render(request, 'users/financial_report.html', context)
+
+@login_required
+@user_passes_test(lambda u: u.profile.role == 'ADM')
+def admin_reset_password(request, user_id):
+    User = get_user_model()
+    user = get_object_or_404(User, id=user_id)
+    
+    if request.method == 'POST':
+        # Generate a random password
+        import secrets
+        import string
+        alphabet = string.ascii_letters + string.digits
+        new_password = ''.join(secrets.choice(alphabet) for i in range(12))
+        
+        # Update user's password
+        user.password = make_password(new_password)
+        user.save()
+        
+        # Send email to user
+        subject = 'Your password has been reset'
+        html_message = render_to_string('users/password_reset_email.html', {
+            'user': user,
+            'new_password': new_password,
+        })
+        plain_message = strip_tags(html_message)
+        
+        try:
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                html_message=html_message,
+                fail_silently=False,
+            )
+            messages.success(request, f'Password has been reset for {user.username}. An email has been sent with the new password.')
+        except Exception as e:
+            messages.error(request, f'Password was reset but email could not be sent: {str(e)}')
+        
+        return redirect('users:member_list')
+    
+    return render(request, 'users/admin_reset_password.html', {'user': user})
+
+@csrf_protect
+def accept_invitation(request, token):
+    """Handle user accepting an invitation and completing their profile."""
+    try:
+        # Get profile by token, ensure token isn't expired (7 days)
+        profile = get_object_or_404(
+            Profile,
+            invitation_token=token,
+            invitation_sent_at__gte=timezone.now() - timedelta(days=7)
+        )
+        user = profile.user
+
+        # If user is already active, redirect to login
+        if user.is_active:
+            messages.info(request, 'This invitation has already been used.')
+            return redirect('users:login')
+
+        if request.method == 'POST':
+            form = ProfileCompletionForm(
+                request.POST,
+                instance=profile,
+                user_instance=user
+            )
+            if form.is_valid():
+                try:
+                    with transaction.atomic():
+                        # Update User data first
+                        user.username = form.cleaned_data['username']
+                        user.email = form.cleaned_data['email']
+                        user.first_name = form.cleaned_data['first_name']
+                        user.middle_name = form.cleaned_data.get('middle_name', '')
+                        user.last_name = form.cleaned_data['last_name']
+                        user.set_password(form.cleaned_data['password'])
+                        user.is_active = True
+                        user.save()
+
+                        # Update Profile data
+                        profile = form.save(commit=False)
+                        profile.invitation_token = None
+                        profile.invitation_sent_at = None
+                        profile.save()
+
+                        # Create a new session
+                        request.session.create()
+                        
+                        # Log the user in
+                        login(request, user)
+                        
+                        messages.success(request, 'Welcome! Your profile has been created successfully.')
+                        return redirect('users:dashboard')
+
+                except Exception as e:
+                    messages.error(request, f'Error updating profile: {str(e)}')
+            else:
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f'{field}: {error}')
+        else:
+            form = ProfileCompletionForm(instance=profile, user_instance=user)
+
+        return render(request, 'users/accept_invitation.html', {
+            'form': form,
+            'token': token,
+        })
+
+    except Profile.DoesNotExist:
+        messages.error(request, 'Invalid or expired invitation token.')
+        return redirect('users:login')

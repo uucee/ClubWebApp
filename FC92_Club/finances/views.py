@@ -96,7 +96,7 @@ def manage_dues(request):
 
                 # Get active members excluding superusers
                 active_members = Profile.objects.filter(
-                    status=Profile.Status.ACTIVE,
+                    status='ACT',
                     user__is_superuser=False
                 )
                 dues_to_create = []

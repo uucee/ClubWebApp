@@ -10,4 +10,9 @@ app_name = 'pages'
 # urlpatterns = [
 #    path('announcements/', views.announcement_list, name='announcement_list'),
 # ]
-urlpatterns = [] # Empty for now
+urlpatterns = [
+    path('', views.home_page, name='home'),
+    path('announcements/', views.announcement_list, name='announcement_list'),
+    path('announcements/create/', views.create_announcement, name='create_announcement'),
+    path('announcements/<int:announcement_id>/toggle/', views.toggle_announcement, name='toggle_announcement'),
+]

@@ -37,13 +37,13 @@
                 <div class="form-group">
                     <label for="role">Role</label>
                     <select class="form-control" id="role" name="role">
-                        <option value="MEMBER">Member</option>
-                        <option value="FINANCIAL_SECRETARY">Financial Secretary</option>
-                        <option value="ADMIN">Administrator</option>
+                        <option value="MEM">Member</option>
+                        <option value="FS">Financial Secretary</option>
+                        <option value="ADM">Administrator</option>
                     </select>
                 </div>
                 {% else %}
-                <input type="hidden" name="role" value="MEMBER">
+                <input type="hidden" name="role" value="MEM">
                 {% endif %}
                 <div class="form-group">
                     <div class="form-check">
@@ -70,7 +70,7 @@
                     <small class="form-text text-muted">
                         CSV format: first_name,last_name,email{% if request.user.profile.is_admin %},role{% endif %}<br>
                         {% if request.user.profile.is_admin %}
-                        Role options: MEMBER, FINANCIAL_SECRETARY, ADMIN
+                        Role options: MEM, FS, ADM
                         {% else %}
                         All members will be added as regular members
                         {% endif %}

@@ -1,5 +1,6 @@
 <!-- pages/templates/pages/home.html -->
 {% extends 'base.html' %}
+{% load humanize %}
 
 {% block title %}Welcome - {{ block.super }}{% endblock %}
 
@@ -24,12 +25,15 @@
                     <h5 class="card-title">{{ announcement.title }}</h5>
                      <p class="card-subtitle mb-2 text-muted">
                         Posted on {{ announcement.publish_date|date:"F d, Y" }}
-                        {% if announcement.author %} by {{ announcement.author.username }}{% endif %}
+                        {% if announcement.author %} by {{ announcement.author.get_full_name }}{% endif %}
                     </p>
-                    <p class="card-text">{{ announcement.content|linebreaksbr }}</p> {# Use linebreaksbr for simple text formatting #}
+                    <p class="card-text">{{ announcement.content|linebreaks }}</p>
                 </div>
             </div>
         {% endfor %}
+        <div class="text-center mt-3">
+            <a href="{% url 'pages:announcement_list' %}" class="btn btn-outline-primary">View All Announcements</a>
+        </div>
     {% else %}
         <p>No announcements available at the moment.</p>
     {% endif %}

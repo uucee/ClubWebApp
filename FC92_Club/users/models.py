@@ -3,6 +3,8 @@ from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+from django_countries.fields import CountryField
+
 
 class User(AbstractUser):
     middle_name = models.CharField(max_length=30, blank=True)
@@ -62,64 +64,60 @@ class User(AbstractUser):
         verbose_name_plural = 'users'
 
 class Profile(models.Model):
-    class Role(models.TextChoices):
-        ADMIN = 'ADM', 'Administrator'
-        FINANCIAL_SECRETARY = 'FS', 'Financial Secretary'
-        MEMBER = 'MEM', 'Member'
+        # filepath: c:\Django Project\FC92_Club\FC92_Club\users\models.py
+    # ... other imports ...
+    
+    # Define choices for the role field
+    ROLES = [
+        ('ADM', 'Admin'),
+        ('FS', 'Financial Secretary'),
+        ('MEM', 'Member'),
+    ]
+    
+    # ... rest of the file, including Profile class ...
 
-    class Status(models.TextChoices):
-        ACTIVE = 'ACT', 'Active'
-        SUSPENDED = 'SUS', 'Suspended' # Financially not up to date
-        REMOVED = 'REM', 'Removed'   # No longer a member
-        PENDING = 'PEN', 'Pending'   # Invitation sent but not yet completed profile
+    STATUS_CHOICES = (
+        ('ACT', 'Active'),
+        ('SUS', 'Suspended'),
+        ('REM', 'Removed'),
+    )
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    phone = models.CharField(max_length=20, blank=True)
-    address = models.TextField(blank=True)
-    city = models.CharField(max_length=100, blank=True)
-    country = models.CharField(max_length=100, blank=True)
-    role = models.CharField(max_length=3, choices=Role.choices, default=Role.MEMBER)
-    status = models.CharField(max_length=3, choices=Status.choices, default=Status.PENDING)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    role = models.CharField(max_length=3, choices=ROLES, default='MEM')
+    status = models.CharField(max_length=3, choices=STATUS_CHOICES, default='ACT')
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    city = models.CharField(max_length=100, blank=True, null=True)
+    country = CountryField(blank=True, null=True)
     invitation_token = models.CharField(max_length=32, blank=True, null=True)
-    invitation_sent_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(null=True, blank=True)
-    updated_at = models.DateTimeField(null=True, blank=True)
+    invitation_sent_at = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.user.get_full_name()} ({self.get_role_display()})"
 
-    def get_full_name(self):
-        """Return the full name including middle name if available."""
-        name_parts = [self.user.first_name]
-        if hasattr(self, 'middle_name') and self.middle_name:
-            name_parts.append(self.middle_name)
-        name_parts.append(self.user.last_name)
-        return ' '.join(name_parts)
+    @property
+    def is_admin(self):
+        return self.role == 'ADM'
 
     @property
     def is_financial_secretary(self):
-        """Check if user is a financial secretary."""
-        return self.role == self.Role.FINANCIAL_SECRETARY
-
-    @property
-    def is_admin(self):
-        """Check if user is an admin."""
-        return self.role == self.Role.ADMIN
+        return self.role == 'FS'
 
     @property
     def is_active_member(self):
         # Checks both user active status and profile status
-        return self.user.is_active and self.status == self.Status.ACTIVE
+        return self.user.is_active and self.status == 'ACT'
 
     def save(self, *args, **kwargs):
-        if not self.created_at:
-            self.created_at = timezone.now()
-        self.updated_at = timezone.now()
         super().save(*args, **kwargs)
 
+    class Meta:
+        ordering = ['user__last_name', 'user__first_name']
+
 # Signal to create or update Profile when User is created/saved
-#@receiver(post_save, sender=User)
-#def create_or_update_user_profile(sender, instance, created, **kwargs):
-#    if created:
-#        Profile.objects.get_or_create(user=instance)
-    #instance.profile.save()
+@receiver(post_save, sender=User)
+def create_or_update_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+    else:
+        instance.profile.save()

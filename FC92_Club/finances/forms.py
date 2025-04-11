@@ -6,7 +6,7 @@ from users.models import Profile # To populate member choices
 class PaymentForm(forms.ModelForm):
     # If FS needs to select member when recording payment
     member = forms.ModelChoiceField(
-        queryset=Profile.objects.filter(status=Profile.Status.ACTIVE).select_related('user').order_by('user__username'),
+        queryset=Profile.objects.filter(status='ACT').select_related('user').order_by('user__username'),
         label="Member"
     )
 
@@ -21,7 +21,7 @@ class DueForm(forms.ModelForm):
     # Allow selecting multiple members to apply a due to? More complex.
     # Single member selection for now:
     member = forms.ModelChoiceField(
-        queryset=Profile.objects.filter(status=Profile.Status.ACTIVE).select_related('user').order_by('user__username'),
+        queryset=Profile.objects.filter(status='ACT').select_related('user').order_by('user__username'),
         label="Member",
         required=True
     )

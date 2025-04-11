@@ -26,7 +26,7 @@ def create_test_data():
     admin_profile = Profile.objects.create(
         user=admin_user,
         role=Profile.Role.ADMIN,
-        status=Profile.Status.ACTIVE,
+        status='ACT',
         phone='1234567890',
         address='123 Admin Street',
         city='London',
@@ -45,7 +45,7 @@ def create_test_data():
     fs_profile = Profile.objects.create(
         user=fs_user,
         role=Profile.Role.FINANCIAL_SECRETARY,
-        status=Profile.Status.ACTIVE,
+        status='ACT',
         phone='0987654321',
         address='456 Finance Street',
         city='London',
@@ -92,7 +92,7 @@ def create_test_data():
         profile = Profile.objects.create(
             user=user,
             role=Profile.Role.MEMBER,
-            status=Profile.Status.ACTIVE,
+            status='ACT',
             phone=member_data['phone'],
             address=member_data['address'],
             city=member_data['city'],
